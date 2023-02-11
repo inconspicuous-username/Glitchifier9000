@@ -22,6 +22,6 @@ The model uses the following pinout:
 ```
 For your convenience you can swap the location of port 1 and 2, so the layout matches the pins of a conventional FET.
 
-[Suggested layout for the ports](./readme_fig1.PNG "Title")
+![Suggested layout for the ports](./readme_fig1.PNG "Title")
 
 The resistor connecting the voltage source to the gate is to limit the current. This is to roughly simulate the limited current output of the Raspberry Pico.
