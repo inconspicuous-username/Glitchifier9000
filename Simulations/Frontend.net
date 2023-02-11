@@ -1,0 +1,10 @@
+* F:\6 -  Gitreppos\Glitchifier9000\Simulations\Frontend.asc
+V1 N003 0 PULSE(0 3.3 0.01u 0 0 0.2u 1u)
+V2 N001 0 3.3
+R1 N004 N003 10
+XU1 N002 N004 0 irf7807zpbf
+R2 N001 N002 3.3
+.tran 1us
+.lib C:\Users\Jetse\Documents\irf7807zpbf.cir
+.backanno
+.end
