@@ -1,0 +1,3 @@
+rshell
+mpremote
+micropython-rp2-stubs

@@ -18,7 +18,7 @@ if args.verbose:
     DEBUG = True
 
 im = Image.open(args.image_file)
-bits = np.asarray(im) # TODO bytes in the framebuffer are vertical, so this should be transposed to write it directly instead of pixel by pixel
+bits = np.asarray(im) # TODO bytes in the framebuffer are vertical, so this should be transposed to write it directly instead of pixel by pixel 
 
 if DEBUG:
     for bitline in bits:
