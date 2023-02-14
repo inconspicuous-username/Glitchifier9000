@@ -1,4 +1,6 @@
 (fp_lib_table
+  (version 7)
   (lib (name "MCU_RaspberryPi_and_Boards")(type "KiCad")(uri "F:/6 -  Gitreppos/Glitchifier9000/Kicad/KiCad-RP-Pico/RP-Pico Libraries/MCU_RaspberryPi_and_Boards.pretty")(options "")(descr ""))
   (lib (name "IRF7807")(type "KiCad")(uri "${KIPRJMOD}/IRF7807.pretty")(options "")(descr ""))
+  (lib (name "Oled_I2C_Display")(type "KiCad")(uri "${KIPRJMOD}/Oled_I2C_Display.pretty")(options "")(descr ""))
 )
