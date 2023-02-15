@@ -1,17 +1,19 @@
 from PIL import Image
 from pprint import pprint
 from binascii import b2a_base64
+from zlib import compress
 
 import sys
 import argparse
 import numpy as np
 
-parser = argparse.ArgumentParser(
-    description="""Convert image to monochrome bit (1-bit) byte hexstring image for OLED display."""
-)
+parser = argparse.ArgumentParser(description="""Convert image to monochrome bit (1-bit) byte hexstring image for OLED display.""")
 parser.add_argument('image_file', type=str)
 parser.add_argument('-v', '--verbose', action='count', default=0)
-parser.add_argument('--hex', action='store_true', default=False, help='Print hex instead of base64 encoded')
+parser.add_argument('--no-compress', action='store_true', default=False, help='Do not compress output')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--hex', action='store_true', default=False, help='Print hex instead of base64 encoded')
+group.add_argument('--raw', action='store_true', default=False, help='Print raw bytes instead of base64 encoded')
 args = parser.parse_args()
 
 DEBUG = False
@@ -80,7 +82,13 @@ assert bits_framebuf.shape[0]*bits_framebuf.shape[1] == 4096
 assert len(bytes_framebuf) == 4096 // 8
 assert screen == screen2
 
+if args.no_compress:
+    compress = lambda x: x
 if args.hex:
-    print(bytes(bytes_framebuf).hex())
+    ret = compress(bytearray(bytes_framebuf)).hex()
+elif args.raw:
+    ret = compress(bytearray(bytes_framebuf))
 else:
-    print(b2a_base64(bytes_framebuf, newline=False).decode())
+    ret = b2a_base64(compress(bytes_framebuf), newline=False).decode()
+
+print(ret)
