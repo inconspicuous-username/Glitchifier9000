@@ -18,7 +18,22 @@ if args.verbose:
     DEBUG = True
 
 im = Image.open(args.image_file)
-bits = np.asarray(im) # TODO bytes in the framebuffer are vertical, so this should be transposed to write it directly instead of pixel by pixel 
+bits = np.asarray(im) 
+"""TODO bits in the framebuffer are organized as 
+
+    00 08 .. 
+    01 09 ..
+    02 10 ..
+    03 11 ..
+    04 12 ..
+    05 13 ..
+    06 14 ..
+    07 15 ..
+    .  .  
+    .  .
+
+So should be transposed properly to write it directly to framebuf.buffer instead of pixel by pixel
+"""
 
 if DEBUG:
     for bitline in bits:
@@ -29,23 +44,39 @@ if DEBUG:
                 print(' ', end='')
         print()
 
-bits = [num for elem in bits for num in elem]
+bits_framebuf = np.reshape(bits.T, (128*4, 8))
+for idx in range(len(bits_framebuf)):
+    idx2 = (idx // 128 + idx * 4) % (128 * 4)
+    byte_bits = bits_framebuf[idx2]
+    byte = byte_bits[0] << 0 | byte_bits[1] << 1 | byte_bits[2] << 2 | byte_bits[3] << 3 |\
+           byte_bits[4] << 4 | byte_bits[5] << 5 | byte_bits[6] << 6 | byte_bits[7] << 7
+    print(f'{byte:02x}', end='')
+print()
+
+sys.exit()
+
+bitsT = [num for elem in bits.T for num in elem]
 
 if DEBUG:
-    for idx, bit in enumerate(bits):
-        if idx != 0 and idx % 128 == 0:
-            print()
-        if bit:
-            print('█', end='')
-        else:
-            print(' ', end='')
+    print()
+    # Print in nested loop
+    for y in range(0, 32):
+        for idx in range(y, 128*32, 32):
+            bit = bitsT[idx]
+            # print(f'{idx:04d} ', end='')
+            if bit:
+                print('█', end='')
+            else:
+                print(' ', end='')
+        print()
     print()
 
-assert len(bits) % 8 == 0
+assert len(bitsT) % 8 == 0
+assert len(bitsT) % 4096 == 0
 
-bs = bytearray([ bits[idx+0] << 7 | bits[idx+1] << 6 | bits[idx+2] << 5 | \
-                 bits[idx+3] << 4 | bits[idx+4] << 3 | bits[idx+5] << 2 | \
-                 bits[idx+6] << 1 | bits[idx+7] for idx in range(0, len(bits), 8)])
+bs = bytearray([ bitsT[idx+0] << 7 | bitsT[idx+1] << 6 | bitsT[idx+2] << 5 | \
+                 bitsT[idx+3] << 4 | bitsT[idx+4] << 3 | bitsT[idx+5] << 2 | \
+                 bitsT[idx+6] << 1 | bitsT[idx+7] for idx in range(0, len(bitsT), 8)])
 
 print(bs.hex())
 
@@ -54,7 +85,11 @@ bits2 = [num for elem in bits2 for num in elem]
 bits2 = [ b == '1' for b in bits2]
 
 if DEBUG:
-    for idx, bit in enumerate(bits2):
+    # Print in single loop
+    for idx in range(len(bits2)):
+        idx2 = (idx // 128 + idx * 32) % (128 * 32)
+        # print(f'{idx2:04d} ', end='')
+        bit = bits2[idx2]
         if idx != 0 and idx % 128 == 0:
             print()
         if bit:
