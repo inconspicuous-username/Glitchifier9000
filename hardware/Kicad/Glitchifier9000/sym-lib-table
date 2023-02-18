@@ -1,4 +1,5 @@
 (sym_lib_table
-  (lib (name "MCU_RaspberryPi_and_Boards")(type "KiCad")(uri "F:/6 -  Gitreppos/Glitchifier9000/Kicad/KiCad-RP-Pico/RP-Pico Libraries/MCU_RaspberryPi_and_Boards.kicad_sym")(options "")(descr ""))
+  (version 7)
   (lib (name "IRF7807z")(type "KiCad")(uri "${KIPRJMOD}/IRF7807z.kicad_sym")(options "")(descr ""))
+  (lib (name "MCU_RaspberryPi_and_Boards")(type "KiCad")(uri "${KIPRJMOD}/KiCad-RP-Pico/RP-Pico Libraries/MCU_RaspberryPi_and_Boards.kicad_sym")(options "")(descr ""))
 )
