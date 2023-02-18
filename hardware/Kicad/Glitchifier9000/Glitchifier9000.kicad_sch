@@ -2308,7 +2308,7 @@
     (property "Value" "SW_DIP_x05" (at 151.13 71.3011 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "" (at 151.13 80.01 0)
+    (property "Footprint" "5-way_switch:JS1300AQ_5-way_switch" (at 151.13 80.01 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (at 151.13 80.01 0)
