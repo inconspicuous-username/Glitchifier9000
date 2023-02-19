@@ -5,7 +5,7 @@
 4,J1,1,Conn_01x04,Oled_I2C_Display:128x64,,azdelivery,3.19,price for multiples of 25,https://www.az-delivery.de/en/products/0-96zolldisplay?variant=39457349828704
 5,J2,1,Conn_01x02,Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical,,,,,
 6,J3,1,Conn_01x04,Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical,,,,,
-7,"JP0, JP1, JP2, JP3, JP4, JP5, JP6, JP7, JP8, JP9, JP10, JP11, JP12, JP14",14,SolderJumper_2_Bridged,Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm,,,,,
+7,"JP0 .. JP14",14,SolderJumper_2_Bridged,Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm,,,,,
 8,Q1,1,DMG2305UX,Package_TO_SOT_SMD:SOT-23,,mouser,0.167,100 instead of 50,https://nl.mouser.com/ProductDetail/Diodes-Incorporated/DMG2305UX-7?qs=L1DZKBg7t5F%2FNBHrjfxC%252Bg%3D%3D
 9,R1,1,R,Resistor_SMD:R_0805_2012Metric,DNP,,,,
 10,R2,1,100k,Resistor_SMD:R_0805_2012Metric,,,0.002,5000 instead of 50,https://nl.mouser.com/ProductDetail/Royalohm/0805W8F1003T5E?qs=e8oIoAS2J1ShnA7x9P0k6g%3D%3D
