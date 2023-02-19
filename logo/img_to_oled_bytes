@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 from PIL import Image
 from pprint import pprint
 from binascii import b2a_base64
@@ -30,7 +32,7 @@ bits = np.asarray(im)
 if DEBUG:
     print(f'{bits.shape=}')
 
-assert bits.shape == (32, 128) or bits.shape == (64, 128), f'cannot handle {bits.shape=}'
+assert bits.shape[0] % 8 == 0 and bits.shape[1] % 8 == 0, f'cannot handle {bits.shape=}'
 
 """Bits in the framebuffer are organized as 
 
@@ -74,10 +76,10 @@ bits2 = [b == '1' for b in bits2]
 
 screen2 = ''
 for idx in range(len(bits2)):
-    idx2 = (idx // 1024) * 1024 + (idx // 128) % 8 + (idx * 8) % 1024
+    idx2 = (idx // (bits.shape[1]*8)) * (bits.shape[1]*8) + (idx // bits.shape[1]) % 8 + (idx * 8) % (bits.shape[1]*8)
     bit = bits2[idx2]
 
-    if idx != 0 and idx % 128 == 0:
+    if idx != 0 and idx % bits.shape[1] == 0:
         screen2 += '\n'
     if bit:
         screen2 += '█'
@@ -87,8 +89,8 @@ screen2 += '\n'
 if DEBUG:
     print(screen2)
 
-assert bits_framebuf.shape[0]*bits_framebuf.shape[1] in [128 * 32, 128 * 64]
-assert len(bytes_framebuf) in [128 * 32 // 8, 128 * 64 // 8]
+assert bits_framebuf.shape[0] % 8 == 0 and bits_framebuf.shape[1] % 8 == 0, f'error {bits_framebuf.shape=}'
+assert len(bytes_framebuf) % 8 == 0, f'error {len(bytes_framebuf)=}'
 assert screen == screen2
 
 if args.no_compress:
@@ -101,3 +103,6 @@ else:
     ret = b2a_base64(compress(bytes_framebuf), newline=False).decode()
 
 print(ret)
+
+if DEBUG:
+    print(f'WIDTH = {bits.shape[1]}, HEIGHT = {bits.shape[0]}')
