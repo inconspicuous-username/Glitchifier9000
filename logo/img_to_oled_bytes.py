@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(description="""Convert image to monochrome bit 
 parser.add_argument('image_file', type=str)
 parser.add_argument('-v', '--verbose', action='count', default=0)
 parser.add_argument('--no-compress', action='store_true', default=False, help='Do not compress output')
+parser.add_argument('--mode', action='store', default='MONO_VLSB', help='framebuf format to use\nsee also https://docs.micropython.org/en/latest/library/framebuf.html#constants')
 group = parser.add_mutually_exclusive_group()
 group.add_argument('--hex', action='store_true', default=False, help='Print hex instead of base64 encoded')
 group.add_argument('--raw', action='store_true', default=False, help='Print raw bytes instead of base64 encoded')
@@ -21,8 +22,16 @@ DEBUG = False
 if args.verbose:
     DEBUG = True
 
+assert args.mode == 'MONO_VLSB', f'can only do --mode MONO_VLSB'
+
 im = Image.open(args.image_file)
 bits = np.asarray(im) 
+
+if DEBUG:
+    print(f'{bits.shape=}')
+
+assert bits.shape == (32, 128) or bits.shape == (64, 128), f'cannot handle {bits.shape=}'
+
 """Bits in the framebuffer are organized as 
 
     00 08 .. 
@@ -50,10 +59,10 @@ for bitline in bits:
 if DEBUG:
     print(screen)
 
-bits_framebuf = np.reshape(bits.T, (128*4, 8))
-bytes_framebuf = np.zeros(512, dtype=np.uint8)
+bits_framebuf = np.reshape(bits.T, (bits.shape[1] * bits.shape[0] // 8, 8))
+bytes_framebuf = np.zeros(bits.shape[1] * bits.shape[0] // 8, dtype=np.uint8)
 for idx in range(len(bits_framebuf)):
-    idx2 = (idx // 128 + idx * 4) % (128 * 4)
+    idx2 = (idx // bits.shape[1] + idx * bits.shape[0] // 8) % (bits.shape[1] * bits.shape[0] // 8)
     byte_bits = bits_framebuf[idx2]
     byte = byte_bits[0] << 0 | byte_bits[1] << 1 | byte_bits[2] << 2 | byte_bits[3] << 3 |\
            byte_bits[4] << 4 | byte_bits[5] << 5 | byte_bits[6] << 6 | byte_bits[7] << 7
@@ -78,8 +87,8 @@ screen2 += '\n'
 if DEBUG:
     print(screen2)
 
-assert bits_framebuf.shape[0]*bits_framebuf.shape[1] == 4096
-assert len(bytes_framebuf) == 4096 // 8
+assert bits_framebuf.shape[0]*bits_framebuf.shape[1] in [128 * 32, 128 * 64]
+assert len(bytes_framebuf) in [128 * 32 // 8, 128 * 64 // 8]
 assert screen == screen2
 
 if args.no_compress:
