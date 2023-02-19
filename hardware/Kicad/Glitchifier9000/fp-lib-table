@@ -4,4 +4,5 @@
   (lib (name "Oled_I2C_Display")(type "KiCad")(uri "${KIPRJMOD}/Oled_I2C_Display.pretty")(options "")(descr ""))
   (lib (name "MCU_RaspberryPi_and_Boards")(type "KiCad")(uri "${KIPRJMOD}/KiCad-RP-Pico/RP-Pico Libraries/MCU_RaspberryPi_and_Boards.pretty")(options "")(descr ""))
   (lib (name "5-way_switch")(type "KiCad")(uri "${KIPRJMOD}/5-way_switch.pretty")(options "")(descr ""))
+  (lib (name "the_dude")(type "KiCad")(uri "${KIPRJMOD}/the_dude.pretty")(options "")(descr ""))
 )
