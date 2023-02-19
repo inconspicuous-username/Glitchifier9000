@@ -40,7 +40,7 @@ tim.init(freq=2.5, mode=Timer.PERIODIC, callback=tick)
 
 print('drawing pixels')
 
-i2c = I2C(1, sda=Pin(26), scl=Pin(27))
+i2c = I2C(0, sda=Pin(0), scl=Pin(1))
 
 print(i2c.scan())
 print(f'I2C Configuration: {i2c}')
