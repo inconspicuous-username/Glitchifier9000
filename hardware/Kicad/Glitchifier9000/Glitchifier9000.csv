@@ -1,0 +1,14 @@
+#,Reference,Qty,Value,Footprint,DNP,Shop,Price,notes,Link
+1,BT1,1,Battery,Battery:BatteryHolder_Keystone_2468_2xAAA,,mouser,€ 0.84,,https://nl.mouser.com/ProductDetail/Keystone-Electronics/2468?qs=3CbvriavsLAoISGi3MywrQ%3D%3D
+2,"C3, C4",2,C,Capacitor_SMD:C_0805_2012Metric,,,,,
+3,J1,1,Conn_01x04,Oled_I2C_Display:128x64,,azdelivery,€ 3.19,price for multiples of 25,https://www.az-delivery.de/en/products/0-96zolldisplay?variant=39457349828704
+4,J2,1,Conn_01x02,Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical,,,,,
+5,J3,1,Conn_01x04,Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical,,,,,
+6,"JP0, JP1, JP2, JP3, JP4, JP5, JP6, JP7, JP8, JP9, JP10, JP11, JP12, JP14",14,SolderJumper_2_Bridged,Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm,,,,,
+7,Q1,1,DMG2305UX,Package_TO_SOT_SMD:SOT-23,,mouser,€ 0.17,Get 100 instead of 50,https://nl.mouser.com/ProductDetail/Diodes-Incorporated/DMG2305UX-7?qs=L1DZKBg7t5F%2FNBHrjfxC%252Bg%3D%3D
+8,R1,1,R,Resistor_SMD:R_0805_2012Metric,DNP,,,,
+9,R2,1,100k,Resistor_SMD:R_0805_2012Metric,,,€ 0.00,,https://nl.mouser.com/ProductDetail/Royalohm/0805W8F1003T5E?qs=e8oIoAS2J1ShnA7x9P0k6g%3D%3D
+10,SW1,1,SW_SPDT,Button_Switch_THT:SW_CuK_OS102011MA1QN1_SPDT_Angled,,mouser,€ 0.39,,https://nl.mouser.com/ProductDetail/CK/OS102011MA1QN1?qs=WtljUlYws5R6MUgHcLkz4w%3D%3D
+11,SW2,1,SW_DIP_x05,5-way_switch:JS1300AQ_5-way_switch,,mouser,€ 1.30,,https://nl.mouser.com/ProductDetail/E-Switch/JS1300AQ?qs=cyOInwlKnRNRSQbl9aaldA%3D%3D
+12,U1,1,IRF7807z,IRF7807:IRF7808z,,mouser,€ 0.73,,https://nl.mouser.com/ProductDetail/Infineon-Technologies/IRF7807ZTRPBF?qs=9%252BKlkBgLFf0YFsJyOD%252Bj%252Bw%3D%3D
+13,U2,1,Pico,MCU_RaspberryPi_and_Boards:RPi_Pico_SMD_TH,,kiwi,€ 3.75,Price for 10+,https://www.kiwi-electronics.com/en/raspberry-pi-pico-368/raspberry-pi-pico-10494
