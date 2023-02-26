@@ -42,7 +42,7 @@ print('drawing pixels')
 
 i2c = I2C(0, sda=Pin(0), scl=Pin(1))
 
-print(i2c.scan())
+print('i2c scan = ', i2c.scan())
 print(f'I2C Configuration: {i2c}')
 print(f'I2C Address      : {i2c.scan()[0]:x}')
 

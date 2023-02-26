@@ -1,0 +1,6 @@
+mpremote
+mpytool
+mpy-cross
+rshell
+micropython-rp2-stubs
+
