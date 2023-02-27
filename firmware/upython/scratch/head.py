@@ -162,7 +162,7 @@ def badge_mode(name):
 print('[core0] drawing boot')
 
 idx = -1 * (LINE_CHARS*HEIGHT//8) + LINE_CHARS
-def scrolling_welcome_timer(timer: Timer):
+def scrolling_welcome_message(timer: Timer):
     global oled, idx, mouth_timer
 
     name = NAME

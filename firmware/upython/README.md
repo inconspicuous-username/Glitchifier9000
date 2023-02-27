@@ -51,6 +51,30 @@ pip install micropython-rp2-stubs
 
 [set up for vscode](https://micropython-stubs.readthedocs.io/en/latest/22_vscode.html)
 
+## mpytool (easier than rshell in some ways)
+
+```
+pip install mpytool
+```
+
+Open repl (doesn't work on windows):
+
+```
+mpytool -p /dev/tty*** repl
+```
+
+Upload folder:
+
+```
+mpytool -p /dev/tty*** put badge
+```
+
+Upload folder content:
+
+```
+mpytool -p /dev/tty*** put badge/
+```
+
 ## rshell
 
 Open [`rshell`](https://github.com/dhylands/rshell) (should detect your Pico automatically)
