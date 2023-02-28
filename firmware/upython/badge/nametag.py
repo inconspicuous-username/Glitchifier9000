@@ -11,7 +11,7 @@ def read_namefile():
         with open('name.txt', 'r') as f:
             return f.read()
     except:
-        return 'NONAME'
+        return ''
 
 def write_namefile(name):
     with open('name.txt', 'w') as f:
