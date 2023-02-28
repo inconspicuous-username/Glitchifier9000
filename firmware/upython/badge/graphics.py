@@ -1,3 +1,8 @@
+import framebuf
+
+from zlib import decompress
+from binascii import a2b_base64
+
 from debug import print_debug
 
 OLED_WIDTH  = 128
@@ -12,6 +17,10 @@ print_debug(f'{OLED_HEIGHT=}')
 print_debug(f'{OLED_I2C_ID=}')
 print_debug(f'{OLED_I2C_SDA=}')
 print_debug(f'{OLED_I2C_SCL=}')
+
+
+def dec_to_framebuf(imgbytes, width, height, mode=framebuf.MONO_VLSB):
+    return framebuf.FrameBuffer(decompress(a2b_base64(imgbytes)), width, height, mode)
 
 def rotate_row_bytes(buffer, rowidx, left):
     """Rotate all 8 bits of one row"""

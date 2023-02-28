@@ -1,10 +1,6 @@
-from zlib import decompress
-from binascii import a2b_base64
 from machine import Timer
 
-from graphics import OLED_HEIGHT, rotate_row_bytes
-
-import framebuf
+from graphics import OLED_HEIGHT, rotate_row_bytes, dec_to_framebuf
 
 RISCUFEFE_IMPACT = b'eJxlisEJgDAUQzPGB5fwKCjoSHoTLLiG4xQ8uEZHKHgJfPFb2oOgOSQ8XkjWDaCqQCQ3mUcgRIowBoBkKblNq+o1XzYzpOSZzuOw2wH9at5frgNWMz9kWY7J7Lsu7Y8fxWpPCA=='
 RISCUFEFE_IMPACT_HEIGHT = 16
@@ -40,15 +36,16 @@ class NametagAnimator():
 
     def name_to_oled(self, name):
         self.name = name
-
         self.oled.fill(0)
-        self.oled.blit(framebuf.FrameBuffer(decompress(a2b_base64(RISCUFEFE_IMPACT)), RISCUFEFE_IMPACT_WIDTH, RISCUFEFE_IMPACT_HEIGHT, framebuf.MONO_VLSB), 0, 0)
-        self.oled.blit(framebuf.FrameBuffer(decompress(a2b_base64(RISCUFEFE_IMPACT)), RISCUFEFE_IMPACT_WIDTH, RISCUFEFE_IMPACT_HEIGHT, framebuf.MONO_VLSB), 0, OLED_HEIGHT-RISCUFEFE_IMPACT_HEIGHT)
+
+        # Add banner to top and bottom
+        banner = dec_to_framebuf(RISCUFEFE_IMPACT, RISCUFEFE_IMPACT_WIDTH, RISCUFEFE_IMPACT_HEIGHT)
+        self.oled.blit(banner, 0, 0)
+        self.oled.blit(banner, 0, OLED_HEIGHT-RISCUFEFE_IMPACT_HEIGHT)
 
         self.oled.text(self.name, 8, 28)
-
         self.oled.show()
 
-        # Set up rotation timer 
+        # Set up rotation timer for banner rotations
         self.rotate_timer.init(freq=20, callback=self.banner_rotate_timer)
         self.animating = True

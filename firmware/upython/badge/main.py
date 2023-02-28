@@ -3,10 +3,11 @@
 
 import machine
 import sys
+import time
 
 from micropython import const
 from ssd1306 import SSD1306_I2C
-from machine import Pin, I2C
+from machine import Pin, I2C, Timer
 
 from ctf import ctf_main
 from boot import BootAnimator
@@ -22,13 +23,15 @@ def enum(**enums: int):
     return type('Enum', (), enums)
 
 BadgeState = enum(
+    REPL = const(0),
+
     NAMETAG_SHOW = const(1), 
     GLITCHIFIER9000 = const(2),
     CTF = const(3),
 
     NAMETAG_SET = const(4), 
     TOGGLE_DEBUG = const(5),
-    REPL = const(6),
+
 
     BOOT = const(90),
     MENU = const(91),
@@ -44,6 +47,7 @@ def menu_line():
     ]) + '\n\n' + '\n'.join(f' {BadgeState.__dict__[x]}: {x}' for x in [
         'NAMETAG_SET', 
         'TOGGLE_DEBUG', 
+    ]) + '\n\n' + '\n'.join(f' {BadgeState.__dict__[x]}: {x}' for x in [
         'REPL',
     ])
 
@@ -62,9 +66,9 @@ def init_i2c_oled():
 
 
 class Main():
-    def __init__(self) -> None:
-        self.state = BadgeState.BOOT # TODO enable this
-        # self.state = BadgeState.NAMETAG_SHOW
+    def __init__(self, initial_state=BadgeState.BOOT) -> None:
+        self.state = initial_state
+
         self.bootanimator = None
         self.nametaganimator = None
         self.name = ''
@@ -109,15 +113,16 @@ class Main():
                 
             elif self.state == BadgeState.NAMETAG_SET:
                 self.oled.fill(0)
-                self.oled.text('ENTER NAME OVER USB!', 0, 0)
-                self.oled.text('TODO MAKE BUTTON', 0, 16)
-                self.oled.text('INTERFACE FOR IT', 0, 24)
+                self.oled.text('ENTER NAME OVER ', 0, 0)
+                self.oled.text('USB!            ', 0, 8)
+                self.oled.text('TODO MAKE BUTTON', 0, 24)
+                self.oled.text('INTERFACE FOR IT', 0, 32)
                 self.oled.show()
 
                 # TODO max name length
                 name = input('name?\n> ')
                 if name:
-                    write_namefile(name)
+                    write_namefile(name[:14])
                 
                 self.state = BadgeState.NAMETAG_SHOW
             
@@ -158,8 +163,6 @@ class Main():
             else:
                 self.state = BadgeState.MENU
             
-
-
     def button_handle(self, interrupts) -> None:
         print_debug('TODO: handle button press based on state')
 
@@ -168,17 +171,30 @@ class Main():
 
 
 if __name__ == '__main__':
+    # m = Main(initial_state=BadgeState.GLITCHIFIER9000) # TODO: make sure it is BadgeState.BOOT (default)
     m = Main()
     m.setup()
 
     exit_state = m.mainloop()
-    # exit_state = BadgeState.GLITCHIFIER9000
 
     if exit_state == BadgeState.CTF:
+        def link_blinker(timer):
+            m.oled.fill(0)
+            m.oled.text('pastebin.com/123', 0, 16)
+            m.oled.text('45asdfasdfsaf   ', 0, 24)
+            m.oled.show()
+            time.sleep_ms(200)
+            m.oled.fill(0)
+            m.oled.show()
+            
+        m.oled.fill(0)
+        m.oled.show()
+        tim = Timer()
+        tim.init(freq=.3, callback=link_blinker)
         ctf_main()
     if exit_state == BadgeState.GLITCHIFIER9000:
-        glitchifier = Glitchifier9000(m.oled)
-        glitchifier.glitchifier_loop()
+        g9k = Glitchifier9000(m.oled)
+        g9k.glitchifier_loop()
     elif exit_state == BadgeState.REPL:
         # drop to interpreter, happens automatically in mpy
         pass

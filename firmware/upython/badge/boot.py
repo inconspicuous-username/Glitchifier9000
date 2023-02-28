@@ -1,11 +1,8 @@
-import framebuf
 import time
 
-from zlib import decompress
-from binascii import a2b_base64
 from machine import Timer
 
-from graphics import OLED_WIDTH, OLED_HEIGHT
+from graphics import OLED_WIDTH, OLED_HEIGHT, dec_to_framebuf
 from debug import print_debug
 
 WELCOME_MESSAGE = (
@@ -87,7 +84,7 @@ class BootAnimator():
         self.boot_done_cb()
 
     def mouth_toggle(self, timer=None):
-        self.oled.blit(framebuf.FrameBuffer(decompress(a2b_base64(HEAD[self.head_state])), HEAD_WIDTH, HEAD_HEIGHT, framebuf.MONO_VLSB), 0, 0)
+        self.oled.blit(dec_to_framebuf(HEAD[self.head_state], HEAD_WIDTH, HEAD_HEIGHT), 0, 0)
         self.oled.show()
         self.head_state ^= 1
 

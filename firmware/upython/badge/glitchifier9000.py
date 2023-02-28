@@ -5,17 +5,25 @@ import time
 from rp2 import asm_pio, PIO, StateMachine
 from machine import Pin
 
-from graphics import OLED_WIDTH, OLED_HEIGHT
+from graphics import OLED_WIDTH, OLED_HEIGHT, dec_to_framebuf
 from debug import print_debug
 
 GPIO_CROWBAR_BASE = 2
 GPIO_CROWBAR_COUNT = 12
 GPIO_TRIGGER_IN = 15
 
-TIMEOUT_S = 1
+TIMEOUT_S = 2
+
+TIME_REGEX = r"^([0-9]*)(n|u|m)?(s)?$"
+
+CROWBAR = 'eJyT+/+5mZmdjY2Nj4dHRkZCwsLCwKCgICHhwYMDBw40AAEDLuBczydR4IBFghEImJmZ2dnZ2fggplpYVBQAgYWdjAQAreURRA=='
+CROWBAR_WIDTH = 56
+CROWBAR_HEIGHT = 16
 
 # NOTE: to drive all 12 pins, cannot use sideset, so will have to use regular out or set instead
 # NOTE: do not autopull with mov from osr
+# NOTE: pushing back a byte seems easier than using an irq, since it has
+#       to be blocking for a while anyway, could even add multiple status bytes
 @asm_pio(out_init=(PIO.OUT_LOW,) * GPIO_CROWBAR_COUNT, autopull=False)
 def simple_glitcher():
     # Read delay and length into x and y
@@ -25,14 +33,16 @@ def simple_glitcher():
     mov(y, osr)
 
     # TODO check to make sure this is equal to amount of crowbar drive pins?
-    # Put amount of driver pins into OSR
-    pull(block)
     
-    # Clear done IRQ
-    irq(clear, 0)
-
     # Wait for high on trigger in
-    # wait(1, pin, 15)
+    wait(1, pin, 0)
+
+    # TODO Add two instructions to feed back that trigger was observed via rx_fifo
+    # Remove if you want maximum speed
+    # NOTE: Maybe should be replaced with irq
+    # Something like:
+    ## mov(isr, pc)
+    ## push(noblock)
 
     label("delay_loop")
     jmp(x_dec, "delay_loop")
@@ -43,14 +53,9 @@ def simple_glitcher():
     label("pulse_loop")
     jmp(y_dec, "pulse_loop")
 
-    irq(0)
+    mov(isr, pc)
+    push(block)
 
-
-
-
-
-
-TIME_REGEX = regex = r"^([0-9]*)(n|u|m)?(s)?$"
 
 def parse_time(time_str):
     m = re.match(TIME_REGEX, time_str)
@@ -85,40 +90,33 @@ def pretty_time(time_val):
     else:
         return f'{time_val:5.0}s'
 
+
 class Glitchifier9000():
     def __init__(self, oled=None):
-        print('GLITCHIFIER9000')
-
+        print('GLITCHIFIER9000!')
         self.oled = oled
-        self.delay_s = 0
-        self.length_s = 0
-
-    def glitch_done_handler(self, irq):
-        self.armed = False
-        self.sm.active(0)
-        
-        if self.oled:
-            self.oled.text('FIRED!', 8*8, 7*8)
-            self.oled.show()
-        print('FIRED!')
+        self.delay_s = 0.5
+        self.length_s = 1e-6
 
     def glitchifier_loop(self):
-
         # TODO add a check to shift some values to make sure all pins are shorted together
 
-        self.sm = StateMachine(0, simple_glitcher, in_base=Pin(GPIO_TRIGGER_IN), out_base=Pin(GPIO_CROWBAR_BASE))
-        self.sm.active(0)
-
-        self.sm.irq(self.glitch_done_handler)
+        self.sm = StateMachine(0, simple_glitcher, 
+            in_base=Pin(GPIO_TRIGGER_IN, Pin.IN, Pin.PULL_DOWN), 
+            out_base=Pin(GPIO_CROWBAR_BASE))
 
         if self.oled:
             self.oled.fill(0)
-            self.oled.text('GLITCHIFIER9000!', 0*8, 0*8)
+            self.oled.text('GLITCHIFIER9000!', 0, 0)
+            self.oled.blit(
+                dec_to_framebuf(CROWBAR, CROWBAR_WIDTH, CROWBAR_HEIGHT), 
+                36, 9)
             self.oled.show()
 
-        while True:
+        while True:            
             if self.oled:
-                self.oled.rect(0, 8, OLED_WIDTH, OLED_HEIGHT-8, 0, True)
+                # Clear area for text
+                self.oled.rect(0, 25, OLED_WIDTH, OLED_HEIGHT-25, 0, True)
 
             while True:
                 time_str = input(f'delay  [{pretty_time(self.delay_s)}] ? > ')
@@ -130,7 +128,7 @@ class Glitchifier9000():
                     break
             
             if self.oled:
-                self.oled.text(f'delay:  {pretty_time(self.delay_s)}', 1*8, 2*8)
+                self.oled.text(f'delay:  {pretty_time(self.delay_s)}', 8, 28)
                 self.oled.show()
 
             while True:
@@ -143,7 +141,7 @@ class Glitchifier9000():
                     break
 
             if self.oled:
-                self.oled.text(f'length: {pretty_time(self.length_s)}', 1*8, int(3.5*8))
+                self.oled.text(f'length: {pretty_time(self.length_s)}', 8, 37)
                 self.oled.show()
 
             print_debug(f'{pretty_time(self.delay_s)=} {pretty_time(self.length_s)=}')
@@ -156,33 +154,44 @@ class Glitchifier9000():
             print_debug(f'{length_cycles=} ({pretty_time(length_cycles * 1/machine.freq())})')
             
             self.sm.active(1)
+            self.sm.restart()
             self.armed = True
 
             if self.oled:
-                self.oled.text('ARMED!', 0*8, 7*8)
+                self.oled.text('ARMED!', 0, 56)
                 self.oled.show()
-            print('ARMED!')
+            print('armed')
 
             # Write delay and length cycle count to FIFO
             self.sm.put(delay_cycles)
-            print(f'{self.sm.tx_fifo()=}')
+            print_debug(f'{self.sm.tx_fifo()=}')
             self.sm.put(length_cycles)
-            print(f'{self.sm.tx_fifo()=}')
+            print_debug(f'{self.sm.tx_fifo()=}')
             
-
-            # Wait for all values to visit FIFO
+            # Wait for all values to exit FIFO
             while self.sm.tx_fifo():
                 pass
 
-            # Wait for interrupt handler to be triggered and done
+            # Wait for return value, or timeout
             t0 = time.time()
-            while self.armed:
+            while self.sm.rx_fifo() == 0:
                 if time.time() - t0 > TIMEOUT_S:
+                    self.sm.active(0)
                     if self.oled:
-                        self.oled.text('TIMEOUT!', 8*8, 7*8)
+                        self.oled.text('TIMEOUT!', 64, 56)
                         self.oled.show()
-                    print(f'timeout after {time.time()-t0}')
+                    print(f'timeout after {time.time()-t0}s')
                     break
             
-            self.armed = False
+            # Nothing in rx_fifo means there was a timeout
+            if self.sm.rx_fifo():
+                print_debug(f'{self.sm.rx_fifo()=}')
+                if self.oled:
+                    self.oled.text('FIRED!', 80, 56)
+                    self.oled.show()
+                print(f'fired with status {self.sm.get()}')
+
             self.sm.active(0)
+            self.armed = False
+
+            input('next? > ')
