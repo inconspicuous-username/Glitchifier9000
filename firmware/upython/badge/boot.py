@@ -1,11 +1,12 @@
 import framebuf
+import time
 
 from zlib import decompress
 from binascii import a2b_base64
 from machine import Timer
 
 from graphics import OLED_WIDTH, OLED_HEIGHT
-
+from debug import print_debug
 
 WELCOME_MESSAGE = (
     "{:<14}"
@@ -51,6 +52,9 @@ LINE_SIZE = OLED_WIDTH - TEXT_BASE
 LINE_CHARS = LINE_SIZE // CHAR_HEIGHT
 TEXT_SPACE = LINE_SIZE // CHAR_HEIGHT * (OLED_HEIGHT // CHAR_HEIGHT)
 
+def clear_text_area(oled):
+    oled.rect(HEAD_WIDTH, 0, LINE_SIZE, OLED_HEIGHT, 0, True)
+
 class BootAnimator():
     def __init__(self, oled):
         self.oled = oled
@@ -61,17 +65,26 @@ class BootAnimator():
         self.head_state = 0
         self.message_idx = -1 * (LINE_CHARS * OLED_HEIGHT//CHAR_HEIGHT) + LINE_CHARS
 
-        self.boot_finished = False
+        self.animating = False
         self.boot_done_cb = None
+        self.name = ''
         
-    def boot_animation_start(self, boot_done_cb):
+    def boot_animation_start(self, name, boot_done_cb):
         self.boot_done_cb = boot_done_cb
+        self.name = name
         self.mouth_timer.init(freq=7, callback=self.mouth_toggle)
         self.welcome_timer.init(freq=7, callback=self.scrolling_welcome_message)
 
-    def boot_animation_kill(self):
+    def boot_animation_kill(self, wait_ms=0):
+        # Have this function to kill the animation faster as well
         self.mouth_timer.deinit()
         self.welcome_timer.deinit()
+        clear_text_area(self.oled)
+        self.oled.show()
+        self.animating = False
+
+        time.sleep_ms(500)
+        self.boot_done_cb()
 
     def mouth_toggle(self, timer=None):
         self.oled.blit(framebuf.FrameBuffer(decompress(a2b_base64(HEAD[self.head_state])), HEAD_WIDTH, HEAD_HEIGHT, framebuf.MONO_VLSB), 0, 0)
@@ -79,21 +92,17 @@ class BootAnimator():
         self.head_state ^= 1
 
     def scrolling_welcome_message(self, timer: Timer):
+        self.animating = True
 
-        name = "TODONAME"
-        message = WELCOME_MESSAGE.format(name)
+        message = WELCOME_MESSAGE.format(self.name)
 
         # deinit the timers once the entire message has been printed
         if self.message_idx == len(message):
-            self.mouth_timer.deinit()
-            self.welcome_timer.deinit()
-
-            self.boot_finished = True
-            self.boot_done_cb()
-            return
+            
+            return self.boot_animation_kill(wait_ms=500)
 
         # Clear only the text area with a rectangle (so no .fill(0))
-        self.oled.rect(HEAD_WIDTH, 0, LINE_SIZE, OLED_HEIGHT, 0, True)
+        clear_text_area(self.oled)
 
         # Figure out start and end of visible welcome message
         start = max(self.message_idx, 0)

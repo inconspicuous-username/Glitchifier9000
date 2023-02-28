@@ -6,6 +6,7 @@ from rp2 import asm_pio, PIO, StateMachine
 from machine import Pin
 
 from graphics import OLED_WIDTH, OLED_HEIGHT
+from debug import print_debug
 
 GPIO_CROWBAR_BASE = 2
 GPIO_CROWBAR_COUNT = 12
@@ -57,14 +58,17 @@ def parse_time(time_str):
     if not m:
         return None
 
-    val, unit, _ = m.groups()
+    val, prefix, unit = m.groups()
     ret = int(val)
 
-    if unit == 'n':
+    if not unit:
+        print_debug(f'No unit, assuming ns')
         ret *= 1e-9
-    elif unit == 'u':
+    if prefix == 'n':
+        ret *= 1e-9
+    elif prefix == 'u':
         ret *= 1e-6
-    elif unit == 'm':
+    elif prefix == 'm':
         ret *= 1e-3
     else:
         pass
@@ -142,14 +146,14 @@ class Glitchifier9000():
                 self.oled.text(f'length: {pretty_time(self.length_s)}', 1*8, int(3.5*8))
                 self.oled.show()
 
-            print(f'{pretty_time(self.delay_s)=} {pretty_time(self.length_s)=}')
-            print(f'{machine.freq()=}')
+            print_debug(f'{pretty_time(self.delay_s)=} {pretty_time(self.length_s)=}')
+            print_debug(f'{machine.freq()=}')
 
             delay_cycles = int(self.delay_s * machine.freq())
             length_cycles = int(self.length_s * machine.freq())
 
-            print(f'{delay_cycles=}  ({pretty_time(delay_cycles * 1/machine.freq())})')
-            print(f'{length_cycles=} ({pretty_time(length_cycles * 1/machine.freq())})')
+            print_debug(f'{delay_cycles=}  ({pretty_time(delay_cycles * 1/machine.freq())})')
+            print_debug(f'{length_cycles=} ({pretty_time(length_cycles * 1/machine.freq())})')
             
             self.sm.active(1)
             self.armed = True
