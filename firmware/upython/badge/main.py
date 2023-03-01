@@ -56,9 +56,9 @@ def init_i2c_oled():
 
     i2c = I2C(OLED_I2C_ID, sda=Pin(OLED_I2C_SDA), scl=Pin(OLED_I2C_SCL))
 
-    print(f'[DEBUG] I2C scan = {i2c.scan()}')
-    print(f'[DEBUG] I2C Configuration = {i2c}')
-    print(f'[DEBUG] I2C Address = 0x{i2c.scan()[0]:x}')
+    print_debug(f'I2C scan = {i2c.scan()}')
+    print_debug(f'I2C Configuration = {i2c}')
+    print_debug(f'I2C Address = 0x{i2c.scan()[0]:x}')
     
     oled = SSD1306_I2C(OLED_WIDTH, OLED_HEIGHT, i2c)
 
@@ -171,6 +171,12 @@ class Main():
 
 
 if __name__ == '__main__':
+    print('Riscufefe #5')
+    print("Where's the FEFE, Lebowski!?")
+    print()
+    print('Press any button to reveal menu.')
+    print()
+
     # m = Main(initial_state=BadgeState.GLITCHIFIER9000) # TODO: make sure it is BadgeState.BOOT (default)
     m = Main()
     m.setup()

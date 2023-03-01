@@ -1,12 +1,26 @@
 import machine
 import re
 import time
+import sys
 
 from rp2 import asm_pio, PIO, StateMachine
-from machine import Pin
+from machine import Pin, Timer
 
 from graphics import OLED_WIDTH, OLED_HEIGHT, dec_to_framebuf
 from debug import print_debug
+
+"""Screen layout:
+128x8  (offset 0)  bits of name
+128x16 (offset 8)  bits of crowbar picture
+128x4  (offset 24) bits of spacer
+128x8  (offset 28) space for delay setting
+128x1  (offset 36) bit of spacer
+128x8  (offset 37) space for length setting
+128x11 (offset 45) bits of spacer
+128x8  (offset 56) space for status + time elapsed
+
+Lazily hardcoded, TODO make it less hardcoded
+"""
 
 GPIO_CROWBAR_BASE = 2
 GPIO_CROWBAR_COUNT = 12
@@ -19,6 +33,8 @@ TIME_REGEX = r"^([0-9]*)(n|u|m)?(s)?$"
 CROWBAR = 'eJyT+/+5mZmdjY2Nj4dHRkZCwsLCwKCgICHhwYMDBw40AAEDLuBczydR4IBFghEImJmZ2dnZ2fggplpYVBQAgYWdjAQAreURRA=='
 CROWBAR_WIDTH = 56
 CROWBAR_HEIGHT = 16
+
+CHARS = ['|', '/', '-', '\\']
 
 # NOTE: to drive all 12 pins, cannot use sideset, so will have to use regular out or set instead
 # NOTE: do not autopull with mov from osr
@@ -53,6 +69,8 @@ def simple_glitcher():
     label("pulse_loop")
     jmp(y_dec, "pulse_loop")
 
+    set(pins, 0)
+
     mov(isr, pc)
     push(block)
 
@@ -66,7 +84,7 @@ def parse_time(time_str):
     val, prefix, unit = m.groups()
     ret = int(val)
 
-    if not unit:
+    if not prefix and not unit:
         print_debug(f'No unit, assuming ns')
         ret *= 1e-9
     if prefix == 'n':
@@ -88,15 +106,59 @@ def pretty_time(time_val):
     if time_val < 1:
         return f'{time_val*1e3:5.0f}ms'
     else:
-        return f'{time_val:5.0}s'
+        return f'{time_val:5.0f}s'
+
+# class WaitAnimator():
+#     def __init__(self, oled):
+#         self.oled = oled
+#         self.animating = False
+#         self.idx = 0
+#         self.timer = Timer()
+#     def timer_cb(self, timer):
+#         self.oled.rect(60, 56, 8, 8, 0, True)
+#         self.oled.text(CHARS[self.idx], 60, 56)
+#         self.oled.show()
+#         self.idx = (self.idx + 1) % len(CHARS)
+#     def animate(self):
+#         self.timer.init(freq=20, callback=self.timer_cb)
+#         self.animating = True
+#     def kill(self):
+#         self.timer.deinit()
+#         self.animating = True
+
+class WaitAnimator2():
+    def __init__(self, oled):
+        self.oled = oled
+        self.animating = False
+        self.tick0 = time.ticks_us()
+        self.timer = Timer()
+    def timer_cb(self, timer):
+        self.oled.rect(60, 56, 68, 8, 0, True)
+        # Convert to ms for more visual pleasure
+        self.oled.text(f'{(time.ticks_us() - self.tick0)*1e-3:.0f}ms', 64, 56)
+        self.oled.show()
+    def animate(self):
+        self.tick0 = time.ticks_us()
+        self.timer.init(freq=20, callback=self.timer_cb)
+        self.animating = True
+    def kill(self):
+        self.timer.deinit()
+        self.animating = False
+
 
 
 class Glitchifier9000():
     def __init__(self, oled=None):
         print('GLITCHIFIER9000!')
+        print(f' - Configure glitch delay and glitch length as format {TIME_REGEX}.')
+        print( ' - Default unit is ns.')
+        print( ' - Leave empty to re-use previous values.')
+        print()
         self.oled = oled
-        self.delay_s = 0.5
-        self.length_s = 1e-6
+        self.delay_s = 2
+        self.length_s = 2
+
+        self.waitanimator = WaitAnimator2(oled)
 
     def glitchifier_loop(self):
         # TODO add a check to shift some values to make sure all pins are shorted together
@@ -113,32 +175,35 @@ class Glitchifier9000():
                 36, 9)
             self.oled.show()
 
-        while True:            
-            if self.oled:
-                # Clear area for text
-                self.oled.rect(0, 25, OLED_WIDTH, OLED_HEIGHT-25, 0, True)
+        while True:
+            print(f'Glitch delay  = {pretty_time(self.delay_s)}')
+            print(f'Glitch length = {pretty_time(self.length_s)}')
 
             while True:
-                time_str = input(f'delay  [{pretty_time(self.delay_s)}] ? > ')
+                time_str = input(f'delay?\n> ')
                 if not time_str:
                     break
                 tmp = parse_time(time_str)
-                if tmp:
+                if tmp != None:
                     self.delay_s = tmp
                     break
+                print(f'Invalid input "{time_str}"')
             
             if self.oled:
+                # Clear area for text
+                self.oled.rect(0, 25, OLED_WIDTH, OLED_HEIGHT-25, 0, True)
                 self.oled.text(f'delay:  {pretty_time(self.delay_s)}', 8, 28)
                 self.oled.show()
 
             while True:
-                time_str = input(f'length [{pretty_time(self.length_s)}] ? > ')
+                time_str = input(f'length?\n> ')
                 if not time_str:
                     break
                 tmp = parse_time(time_str)
-                if tmp:
+                if tmp != None:
                     self.length_s = tmp
                     break
+                print(f'Invalid input "{time_str}"')
 
             if self.oled:
                 self.oled.text(f'length: {pretty_time(self.length_s)}', 8, 37)
@@ -158,6 +223,7 @@ class Glitchifier9000():
             self.armed = True
 
             if self.oled:
+                self.oled.rect(0, 56, 64, 8, 0, True)
                 self.oled.text('ARMED!', 0, 56)
                 self.oled.show()
             print('armed')
@@ -171,27 +237,33 @@ class Glitchifier9000():
             # Wait for all values to exit FIFO
             while self.sm.tx_fifo():
                 pass
+            
+            # Start waiting for trigger animation
+            self.waitanimator.animate()
 
             # Wait for return value, or timeout
             t0 = time.time()
             while self.sm.rx_fifo() == 0:
-                if time.time() - t0 > TIMEOUT_S:
+                if time.time() - t0 > (self.delay_s + self.length_s + TIMEOUT_S):
                     self.sm.active(0)
                     if self.oled:
-                        self.oled.text('TIMEOUT!', 64, 56)
+                        self.oled.rect(0, 56, 64, 8, 0, True)
+                        self.oled.text('TIMEOUT!', 0, 56)
                         self.oled.show()
                     print(f'timeout after {time.time()-t0}s')
                     break
+            
+            # Stop waiting for trigger animation
+            self.waitanimator.kill()
             
             # Nothing in rx_fifo means there was a timeout
             if self.sm.rx_fifo():
                 print_debug(f'{self.sm.rx_fifo()=}')
                 if self.oled:
-                    self.oled.text('FIRED!', 80, 56)
+                    self.oled.rect(0, 56, 64, 8, 0, True)
+                    self.oled.text('FIRED!', 0, 56)
                     self.oled.show()
                 print(f'fired with status {self.sm.get()}')
 
             self.sm.active(0)
             self.armed = False
-
-            input('next? > ')
