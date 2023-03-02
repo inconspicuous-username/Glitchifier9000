@@ -33,7 +33,7 @@ checkone:
 .define public border isone
 """
 
-# 21 / GP16
+# GP20
 @asm_pio()
 def debounce_pio():
     jmp(pin, "isone")
@@ -59,7 +59,7 @@ def debounce_pio():
     jmp(x_dec, "checkone")
     jmp("iszero")
 
-PIN_BASE = 16
+PIN_BASE = 20 # should be middle button
 button_pin = Pin(PIN_BASE, Pin.IN, Pin.PULL_DOWN)
 
 

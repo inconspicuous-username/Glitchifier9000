@@ -6,7 +6,7 @@ import sys
 from rp2 import asm_pio, PIO, StateMachine
 from machine import Pin, Timer
 
-from graphics import OLED_WIDTH, OLED_HEIGHT, dec_to_framebuf
+from graphics import OLED_WIDTH, OLED_HEIGHT, OLED_I2C_SDA, OLED_I2C_SCL, dec_to_framebuf
 from debug import print_debug
 
 """Screen layout:
@@ -23,7 +23,7 @@ Lazily hardcoded, TODO make it less hardcoded
 """
 
 GPIO_CROWBAR_BASE = 2
-GPIO_CROWBAR_COUNT = 12
+GPIO_CROWBAR_COUNT = 13
 GPIO_TRIGGER_IN = 15
 
 TIMEOUT_S = 2
@@ -48,28 +48,25 @@ def simple_glitcher():
     pull(block)
     mov(y, osr)
 
-    # TODO check to make sure this is equal to amount of crowbar drive pins?
-    
+    # Last pull into osr is to use out for setting enough crowbar GPIOs
+    pull(block)
+
     # Wait for high on trigger in
     wait(1, pin, 0)
 
-    # TODO Add two instructions to feed back that trigger was observed via rx_fifo
-    # Remove if you want maximum speed
-    # NOTE: Maybe should be replaced with irq
-    # Something like:
-    ## mov(isr, pc)
-    ## push(noblock)
+    # TODO Add two instructions to feed back that trigger was observed via rx_fifo for visual pleasure
 
     label("delay_loop")
     jmp(x_dec, "delay_loop")
 
-    # TODO check if "set(pins, NUMBER)" maps 1 bit to 1 pin!
-    set(pins, 12)
+    # Use all 32 bits of OSR to drive 13 pins high
+    out(pins, 32)
     
     label("pulse_loop")
     jmp(y_dec, "pulse_loop")
 
-    set(pins, 0)
+    # Clear all outpit pins to 0
+    mov(pins, null)
 
     mov(isr, pc)
     push(block)
@@ -108,25 +105,47 @@ def pretty_time(time_val):
     else:
         return f'{time_val:5.0f}s'
 
-# class WaitAnimator():
-#     def __init__(self, oled):
-#         self.oled = oled
-#         self.animating = False
-#         self.idx = 0
-#         self.timer = Timer()
-#     def timer_cb(self, timer):
-#         self.oled.rect(60, 56, 8, 8, 0, True)
-#         self.oled.text(CHARS[self.idx], 60, 56)
-#         self.oled.show()
-#         self.idx = (self.idx + 1) % len(CHARS)
-#     def animate(self):
-#         self.timer.init(freq=20, callback=self.timer_cb)
-#         self.animating = True
-#     def kill(self):
-#         self.timer.deinit()
-#         self.animating = True
+def crowbar_short_check():
+    PIN_LIST = list(range(29))
 
-class WaitAnimator2():
+    # Remove the GPIOs with a special function
+    PIN_LIST.remove(25)
+    PIN_LIST.remove(24)
+    PIN_LIST.remove(23)
+
+    # Remove the I2C display pins
+    PIN_LIST.remove(OLED_I2C_SDA)
+    PIN_LIST.remove(OLED_I2C_SCL)
+
+    # Remove the base crowbar pin
+    PIN_LIST.remove(GPIO_CROWBAR_BASE)
+
+    # Configure the base pin as output
+    crowbar_base = Pin(GPIO_CROWBAR_BASE, Pin.OUT, value=0)
+
+    # Configure all pins as input pull low
+    for p in PIN_LIST:
+        Pin(p, Pin.IN, Pin.PULL_DOWN)
+
+    # Check the value of all pins
+    for p in PIN_LIST:
+        print_debug(f'{p} = {Pin(p).value()=}')
+        assert Pin(p).value() == 0, f'Pin({p}) should be 0. Probably.'
+
+    # Set crowbar base pin to high
+    crowbar_base.value(1)
+
+    # Check that only the crowbar pins change to high
+    crowbar_list = list(range(GPIO_CROWBAR_BASE, GPIO_CROWBAR_BASE+GPIO_CROWBAR_COUNT))
+    for p in PIN_LIST:
+        print_debug(f'{p} = {Pin(p).value()=}')
+        if p in crowbar_list:
+            assert Pin(p).value() == 1, f'Pin({p}) should be 1'
+        else:
+            assert Pin(p).value() == 0, f'Pin({p}) should be 0'
+
+
+class WaitAnimator():
     def __init__(self, oled):
         self.oled = oled
         self.animating = False
@@ -145,8 +164,6 @@ class WaitAnimator2():
         self.timer.deinit()
         self.animating = False
 
-
-
 class Glitchifier9000():
     def __init__(self, oled=None):
         print('GLITCHIFIER9000!')
@@ -155,13 +172,25 @@ class Glitchifier9000():
         print( ' - Leave empty to re-use previous values.')
         print()
         self.oled = oled
-        self.delay_s = 2
-        self.length_s = 2
+        self.delay_s = .1
+        self.length_s = .1
 
-        self.waitanimator = WaitAnimator2(oled)
+        self.waitanimator = WaitAnimator(oled)
 
     def glitchifier_loop(self):
-        # TODO add a check to shift some values to make sure all pins are shorted together
+        # try:
+        #     crowbar_short_check()
+        # except:
+        #     self.oled.fill(0)
+        #     self.oled.text('GLITCHING DENIED', 0, 0)
+        #     self.oled.text('GLITCHING DENIED', 0, 8)
+        #     self.oled.text('CROWBAR PINS DO ', 0, 24)
+        #     self.oled.text('NOT ADD UP!     ', 0, 32)
+        #     self.oled.text('GLITCHING DENIED', 0, 48)
+        #     self.oled.text('GLITCHING DENIED', 0, 56)
+        #     self.oled.show()
+        #     print('CHECK PINS!')
+        #     return
 
         self.sm = StateMachine(0, simple_glitcher, 
             in_base=Pin(GPIO_TRIGGER_IN, Pin.IN, Pin.PULL_DOWN), 
@@ -233,6 +262,12 @@ class Glitchifier9000():
             print_debug(f'{self.sm.tx_fifo()=}')
             self.sm.put(length_cycles)
             print_debug(f'{self.sm.tx_fifo()=}')
+
+            # Put the value for out() instruction in OSR to drive all 13 pins high
+            # DON'T PUT MORE THAN 3 VALUES INTO TX FIFO, OR IT WILL MESS WITH PUTTING PINS LOW
+            pin_bits = 0b1_1111_1111_1111
+            assert f'{pin_bits:b}'.count('1') == GPIO_CROWBAR_COUNT
+            self.sm.put(pin_bits)
             
             # Wait for all values to exit FIFO
             while self.sm.tx_fifo():
