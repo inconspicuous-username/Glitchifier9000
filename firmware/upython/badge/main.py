@@ -15,6 +15,7 @@ from glitchifier9000 import Glitchifier9000
 from graphics import OLED_WIDTH, OLED_HEIGHT, OLED_I2C_ID, OLED_I2C_SCL, OLED_I2C_SDA
 from debug import print_debug
 from nametag import read_namefile, write_namefile, NametagAnimator
+from buttons import Buttons
 from utils import enum
 
 BadgeState = enum(
@@ -71,6 +72,7 @@ class Main():
     def setup(self):
         self.name = read_namefile()
         self.i2c, self.oled = init_i2c_oled()
+        self.buttons = Buttons(m.oled)
 
     def mainloop(self) -> None:
         self.bootanimator = BootAnimator(self.oled)
@@ -172,7 +174,7 @@ if __name__ == '__main__':
     print('Press any button to reveal menu.')
     print()
 
-    # m = Main(initial_state=BadgeState.GLITCHIFIER9000) # TODO: make sure it is BadgeState.BOOT (default)
+    # m = Main(initial_state=BadgeState.REPL) # TODO: make sure it is BadgeState.BOOT (default)
     m = Main()
     m.setup()
 
@@ -181,8 +183,8 @@ if __name__ == '__main__':
     if exit_state == BadgeState.CTF:
         def link_blinker(timer):
             m.oled.fill(0)
-            m.oled.text('pastebin.com/123', 0, 16)
-            m.oled.text('45asdfasdfsaf   ', 0, 24)
+            m.oled.text(' pastebin.com/  ', 0, 16)
+            m.oled.text(' DbBdR2rs       ', 0, 24)
             m.oled.show()
             time.sleep_ms(200)
             m.oled.fill(0)

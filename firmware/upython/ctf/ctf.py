@@ -1,9 +1,6 @@
 import machine
 import zlib
 
-# from machine import Pin, I2C, Timer
-
-
 MINI_GIGA_HEAP = [0]*255
 heap_list = []
 times_freed = 0
@@ -15,7 +12,7 @@ TYPE_SECR = 0x13
 
 HANDLE_TO_SECRET = -1
 
- 
+
 allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.:"
 def onlyAllowedChar(data):
     for c in data:
@@ -177,10 +174,11 @@ def print_heap_state():
     print("-"*20)
 
 def ctf_loop():
+    count = 0
     while True:
         try:
-            line = input('8==> ')
-            print("# ", end="")
+            line = input('8=' + '='*(count//13) + '=> ')
+            count+=1
             if 'q' == line.rstrip():
                 break
 
@@ -223,7 +221,7 @@ def ctf_loop():
             elif 'about' == line.rstrip():
                 print("\nRiscuFEFE CTF 2023")
                 print("All writes preserved")
-                print("OSS components on https://github.com/XXX")
+                print("OSS components on https://pastebin.com")
             
             elif 'reset' == line.strip():
                 return True
