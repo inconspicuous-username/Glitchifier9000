@@ -15,12 +15,7 @@ from glitchifier9000 import Glitchifier9000
 from graphics import OLED_WIDTH, OLED_HEIGHT, OLED_I2C_ID, OLED_I2C_SCL, OLED_I2C_SDA
 from debug import print_debug
 from nametag import read_namefile, write_namefile, NametagAnimator
-
-## No enum type in micropython
-# https://github.com/micropython/micropython-lib/issues/269
-
-def enum(**enums: int):
-    return type('Enum', (), enums)
+from utils import enum
 
 BadgeState = enum(
     REPL = const(0),
