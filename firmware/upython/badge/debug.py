@@ -1,5 +1,5 @@
 
-DEBUG = False
+DEBUG = True
 
 def print_debug(fstr):
     if DEBUG:

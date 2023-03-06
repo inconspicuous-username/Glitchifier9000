@@ -69,8 +69,8 @@ class BootAnimator():
     def boot_animation_start(self, name, boot_done_cb):
         self.boot_done_cb = boot_done_cb
         self.name = name
-        self.mouth_timer.init(freq=7, callback=self.mouth_toggle)
-        self.welcome_timer.init(freq=7, callback=self.scrolling_welcome_message)
+        self.mouth_timer.init(freq=2, callback=self.mouth_toggle)
+        self.welcome_timer.init(freq=2, callback=self.scrolling_welcome_message)
 
     def boot_animation_kill(self, wait_ms=0):
         # Have this function to kill the animation faster as well

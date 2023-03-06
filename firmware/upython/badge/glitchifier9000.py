@@ -178,19 +178,19 @@ class Glitchifier9000():
         self.waitanimator = WaitAnimator(oled)
 
     def glitchifier_loop(self):
-        # try:
-        #     crowbar_short_check()
-        # except:
-        #     self.oled.fill(0)
-        #     self.oled.text('GLITCHING DENIED', 0, 0)
-        #     self.oled.text('GLITCHING DENIED', 0, 8)
-        #     self.oled.text('CROWBAR PINS DO ', 0, 24)
-        #     self.oled.text('NOT ADD UP!     ', 0, 32)
-        #     self.oled.text('GLITCHING DENIED', 0, 48)
-        #     self.oled.text('GLITCHING DENIED', 0, 56)
-        #     self.oled.show()
-        #     print('CHECK PINS!')
-        #     return
+        try:
+            crowbar_short_check()
+        except:
+            self.oled.fill(0)
+            self.oled.text('GLITCHING DENIED', 0, 0)
+            self.oled.text('GLITCHING DENIED', 0, 8)
+            self.oled.text('CROWBAR PINS DO ', 0, 24)
+            self.oled.text('NOT ADD UP!     ', 0, 32)
+            self.oled.text('GLITCHING DENIED', 0, 48)
+            self.oled.text('GLITCHING DENIED', 0, 56)
+            self.oled.show()
+            print('CHECK PINS!')
+            return
 
         self.sm = StateMachine(0, simple_glitcher, 
             in_base=Pin(GPIO_TRIGGER_IN, Pin.IN, Pin.PULL_DOWN), 

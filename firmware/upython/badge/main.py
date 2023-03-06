@@ -4,6 +4,8 @@
 import machine
 import sys
 import time
+import select
+import io
 
 from micropython import const
 from ssd1306 import SSD1306_I2C
@@ -60,6 +62,43 @@ def init_i2c_oled():
 
     return i2c, oled
 
+def get_stdin_byte_or_button_press(buttons: Buttons) -> tuple:
+    # Wait for a byte from stdin, or any button press
+    # Probably not very power efficient way of doing it :(
+    #
+    # TODO: can probably do some fancy stuff to turn the buttons into io streams as well
+    b = None
+    button = None
+
+    spoll = select.poll()
+
+    spoll.register(sys.stdin, select.POLLIN)
+
+    # Clear any existing recent button
+    buttons.recent = None
+    
+    print_debug(f'before {spoll.poll(0)=} {buttons.recent=}')
+
+    # Wait for byte on stdin, not sure if this waits in a power efficient way
+    while spoll.poll(0) == [] and buttons.recent == None:
+        pass
+
+    print_debug(f'after {spoll.poll(0)=} {buttons.recent=}')
+
+    if spoll.poll(0):
+        b = sys.stdin.read(1)
+        print_debug(f'{b=}')
+    
+    if buttons.recent:
+        button = buttons.recent
+        print_debug(f'{button=}')
+        buttons.recent = None
+
+    # Not sure if this is needed
+    spoll.unregister(sys.stdin)
+
+    return (b, button)
+
 
 class Main():
     def __init__(self, initial_state=BadgeState.BOOT) -> None:
@@ -69,10 +108,14 @@ class Main():
         self.nametaganimator = None
         self.name = ''
 
+        self.spoll = 
+
     def setup(self):
         self.name = read_namefile()
         self.i2c, self.oled = init_i2c_oled()
+
         self.buttons = Buttons(m.oled)
+        self.buttons.button_action = self.buttons.button_record_recent
 
     def mainloop(self) -> None:
         self.bootanimator = BootAnimator(self.oled)
@@ -86,6 +129,7 @@ class Main():
                 self.state = BadgeState.IDLE
             
             elif self.state == BadgeState.MENU:
+                # Menu over serial
                 print(menu_line())
                 selected = input('> ')
 
@@ -99,6 +143,9 @@ class Main():
                         raise ValueError
                 except ValueError:
                     print(f'Invalid selection "{selected}"')
+
+                
+                # Menu on oled / with buttons
                 
             elif self.state == BadgeState.NAMETAG_SHOW:
                 self.name = read_namefile()
@@ -130,14 +177,13 @@ class Main():
                 self.state = BadgeState.MENU
             
             elif self.state == BadgeState.IDLE:
-                machine.idle() # Not sure this actually does anything
+                print_debug('ENTER IDLE')
+                # machine.idle() # Not sure this actually does anything
 
-                # Wait for any byte over stdin
-                b = sys.stdin.read(1)
-                print_debug(f'{b=}')
+                
+                # Wait for input or a python exception from the button
 
-                # Or TODO for a button press
-                # self.button_handle()
+                stdin_byte, button = get_stdin_byte_or_button_press(self.buttons)
 
                 self.state = BadgeState.MENU
 
@@ -159,12 +205,6 @@ class Main():
 
             else:
                 self.state = BadgeState.MENU
-            
-    def button_handle(self, interrupts) -> None:
-        print_debug('TODO: handle button press based on state')
-
-        if interrupts & 1 == 1:
-            self.state = BadgeState.MENU
 
 
 if __name__ == '__main__':
@@ -174,26 +214,30 @@ if __name__ == '__main__':
     print('Press any button to reveal menu.')
     print()
 
-    # m = Main(initial_state=BadgeState.REPL) # TODO: make sure it is BadgeState.BOOT (default)
-    m = Main()
+    m = Main(initial_state=BadgeState.IDLE) # TODO: make sure it is BadgeState.BOOT (default)
+    # m = Main()
     m.setup()
 
     exit_state = m.mainloop()
 
     if exit_state == BadgeState.CTF:
-        def link_blinker(timer):
+        def link_hider(timer):
+            m.oled.fill(0)
+            m.oled.show()
+
+        def link_shower(timer):
             m.oled.fill(0)
             m.oled.text(' pastebin.com/  ', 0, 16)
             m.oled.text(' DbBdR2rs       ', 0, 24)
             m.oled.show()
-            time.sleep_ms(200)
-            m.oled.fill(0)
-            m.oled.show()
+
+            # Use another timer to hide so we don't hang for 200ms
+            Timer().init(mode=Timer.ONE_SHOT, period=200, callback=link_hider)
             
         m.oled.fill(0)
         m.oled.show()
         tim = Timer()
-        tim.init(freq=.3, callback=link_blinker)
+        tim.init(freq=.3, callback=link_shower)
         ctf_main()
     if exit_state == BadgeState.GLITCHIFIER9000:
         g9k = Glitchifier9000(m.oled)
