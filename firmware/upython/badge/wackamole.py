@@ -33,6 +33,9 @@ class WackIt():
         self.timer.deinit()
         self.wacked = True
 
+        t_ms = 9999999999
+        bestwack_ms = None
+
         if not self.wacking:
             print('DISHONEST WACK!!')
             if self.oled:
@@ -44,7 +47,6 @@ class WackIt():
             self.t1 = time.ticks_us()
             self.wacking = False
 
-
             t_ms = (self.t1-self.t0) // 1000
             if self.oled:
                 self.oled.fill(0)
@@ -52,7 +54,6 @@ class WackIt():
                 self.oled.text(f'{t_ms:14}ms', 0, 50)
             print(f'WACK SPEED = {t_ms:14}ms')
 
-        bestwack_ms = None
         try:
             with open('data/bestwack.txt', 'r') as f:
                 bestwack_ms = int(f.read().strip())
@@ -73,6 +74,8 @@ class WackIt():
 
         with open('data/bestwack.txt', 'w') as f:
             f.write(f'{bestwack_ms}')
+
+        time.sleep_ms(2000)
 
 
     def wack(self, timer):
@@ -115,8 +118,16 @@ class WackIt():
         while True:
             self.ready = False
             self.buttons.middle.irq(self.nextwack, trigger=Pin.IRQ_RISING)
-            print('push middle button to wack again')
-            while not self.ready: pass
+            print('Push middle button to wack again')
+            if self.oled:
+                self.oled.fill(0)
+                self.oled.text('READY TO WACK!?', 0, 32)
+                self.oled.show()
+            p = 0
+            while not self.ready:
+                time.sleep_ms(100)
+                self.oled.invert(p)
+                p ^= 1
             self.start()
 
 

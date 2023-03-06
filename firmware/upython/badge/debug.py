@@ -1,3 +1,5 @@
+import os
+
 DEBUG = False
 
 def print_debug(fstr):
@@ -7,6 +9,10 @@ def print_debug(fstr):
         pass
 
 def write_debug():
+    try:
+        os.mkdir('/data')
+    except:
+        pass
     with open('/data/debug', 'wb') as f:
         f.write(bytearray([DEBUG]))
 

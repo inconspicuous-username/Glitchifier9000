@@ -2,7 +2,7 @@
 # import signal
 import os
 try:
-    os.mkdir('data')
+    os.mkdir('/data')
 except OSError:
     print_debug('/data already exists')
 
