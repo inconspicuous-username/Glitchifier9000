@@ -5,9 +5,12 @@ import sys
 
 from rp2 import asm_pio, PIO, StateMachine
 from machine import Pin, Timer
+from ssd1306 import SSD1306_I2C
 
 from graphics import OLED_WIDTH, OLED_HEIGHT, OLED_I2C_SDA, OLED_I2C_SCL, dec_to_framebuf
 from debug import print_debug
+from buttons import Buttons, BUTTON
+from utils import get_stdin_byte_or_button_press
 
 """Screen layout:
 128x8  (offset 0)  bits of name
@@ -24,7 +27,9 @@ Lazily hardcoded, TODO make it less hardcoded
 
 GPIO_CROWBAR_BASE = 2
 GPIO_CROWBAR_COUNT = 13
-GPIO_TRIGGER_IN = 15
+
+# TODO set to middle button for more screen fun, set to 15 to follow schematics
+GPIO_TRIGGER_IN = BUTTON.MIDDLE # 15
 
 TIMEOUT_S = 2
 
@@ -122,27 +127,34 @@ def crowbar_short_check():
 
     # Configure the base pin as output
     crowbar_base = Pin(GPIO_CROWBAR_BASE, Pin.OUT, value=0)
+    crowbar_list = list(range(GPIO_CROWBAR_BASE, GPIO_CROWBAR_BASE+GPIO_CROWBAR_COUNT))
 
     # Configure all pins as input pull low
     for p in PIN_LIST:
         Pin(p, Pin.IN, Pin.PULL_DOWN)
 
     # Check the value of all pins
+    pin_states = {}
     for p in PIN_LIST:
         print_debug(f'{p} = {Pin(p).value()=}')
-        assert Pin(p).value() == 0, f'Pin({p}) should be 0. Probably.'
+        pin_states[p] = Pin(p).value()
+        if p in crowbar_list:
+            assert Pin(p).value() == 0, f'Pin({p}) should be 0'
+        else:
+            # Could be 0 or 1, check that it does not go from 0 to 1 later
+            pass
 
     # Set crowbar base pin to high
     crowbar_base.value(1)
 
     # Check that only the crowbar pins change to high
-    crowbar_list = list(range(GPIO_CROWBAR_BASE, GPIO_CROWBAR_BASE+GPIO_CROWBAR_COUNT))
     for p in PIN_LIST:
         print_debug(f'{p} = {Pin(p).value()=}')
         if p in crowbar_list:
             assert Pin(p).value() == 1, f'Pin({p}) should be 1'
         else:
-            assert Pin(p).value() == 0, f'Pin({p}) should be 0'
+            # State should not have changed
+            assert Pin(p).value() == pin_states[p], f'Pin({p}) should be {pin_states[p]=}, but is {Pin(p).value()=}'
 
 
 class WaitAnimator():
@@ -165,14 +177,16 @@ class WaitAnimator():
         self.animating = False
 
 class Glitchifier9000():
-    def __init__(self, oled=None):
+    def __init__(self, oled: SSD1306_I2C=None, buttons: Buttons=None):
         print('GLITCHIFIER9000!')
         print(f' - Configure glitch delay and glitch length as format {TIME_REGEX}.')
         print( ' - Default unit is ns.')
-        print( ' - Leave empty to re-use previous values.')
+        print( ' - Leave empty to re-use previous value.')
+        print( ' - Push a badge button to re-use previous value.')
         print()
         self.oled = oled
-        self.delay_s = .1
+        self.buttons = buttons
+        self.delay_s = .5
         self.length_s = .1
 
         self.waitanimator = WaitAnimator(oled)
@@ -180,7 +194,7 @@ class Glitchifier9000():
     def glitchifier_loop(self):
         try:
             crowbar_short_check()
-        except:
+        except Exception as e:
             self.oled.fill(0)
             self.oled.text('GLITCHING DENIED', 0, 0)
             self.oled.text('GLITCHING DENIED', 0, 8)
@@ -189,6 +203,7 @@ class Glitchifier9000():
             self.oled.text('GLITCHING DENIED', 0, 48)
             self.oled.text('GLITCHING DENIED', 0, 56)
             self.oled.show()
+            print(f'{e=}')
             print('CHECK PINS!')
             return
 
@@ -208,15 +223,30 @@ class Glitchifier9000():
             print(f'Glitch delay  = {pretty_time(self.delay_s)}')
             print(f'Glitch length = {pretty_time(self.length_s)}')
 
-            while True:
-                time_str = input(f'delay?\n> ')
-                if not time_str:
-                    break
-                tmp = parse_time(time_str)
-                if tmp != None:
-                    self.delay_s = tmp
-                    break
-                print(f'Invalid input "{time_str}"')
+            # Wait for a button or stdin action. If it's a button confirm whatever is 
+            # already configured, if it's stdin continue with input().
+            print('delay?\n> ')
+            if self.buttons:
+                stdin, button = get_stdin_byte_or_button_press(self.buttons, read_stdin=False)
+                print(f'{button=}, {stdin=}')
+            else:
+                stdin = True
+            if stdin:
+                while True:
+                    time_str = input('')
+                    if not time_str:
+                        break
+                    tmp = parse_time(time_str)
+                    if tmp != None:
+                        self.delay_s = tmp
+                        break
+                    print(f'Invalid input "{time_str}"')
+            elif button:
+                # Clear the recorded button press
+                # TODO make delay/length configurable via buttons
+                self.buttons.recent = None
+            else:
+                print('FUNNY STUFF HAPPENING')
             
             if self.oled:
                 # Clear area for text
@@ -224,15 +254,28 @@ class Glitchifier9000():
                 self.oled.text(f'delay:  {pretty_time(self.delay_s)}', 8, 28)
                 self.oled.show()
 
-            while True:
-                time_str = input(f'length?\n> ')
-                if not time_str:
-                    break
-                tmp = parse_time(time_str)
-                if tmp != None:
-                    self.length_s = tmp
-                    break
-                print(f'Invalid input "{time_str}"')
+            print('length?\n> ')
+            if self.buttons:
+                stdin, button = get_stdin_byte_or_button_press(self.buttons, read_stdin=False)
+                print(f'{button=}, {stdin=}')
+            else:
+                stdin = True
+            if stdin:
+                while True:
+                    time_str = input('')
+                    if not time_str:
+                        break
+                    tmp = parse_time(time_str)
+                    if tmp != None:
+                        self.length_s = tmp
+                        break
+                    print(f'Invalid input "{time_str}"')
+            elif button:
+                # Clear the recorded button press
+                # TODO make delay/length configurable via buttons
+                self.buttons.recent = None
+            else:
+                print('FUNNY STUFF HAPPENING')
 
             if self.oled:
                 self.oled.text(f'length: {pretty_time(self.length_s)}', 8, 37)

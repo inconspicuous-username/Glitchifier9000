@@ -10,6 +10,7 @@ import io
 from micropython import const
 from ssd1306 import SSD1306_I2C
 from machine import Pin, I2C, Timer
+from array import array
 
 from ctf import ctf_main
 from boot import BootAnimator
@@ -17,8 +18,9 @@ from glitchifier9000 import Glitchifier9000
 from graphics import OLED_WIDTH, OLED_HEIGHT, OLED_I2C_ID, OLED_I2C_SCL, OLED_I2C_SDA
 from debug import print_debug
 from nametag import read_namefile, write_namefile, NametagAnimator
-from buttons import Buttons
-from utils import enum
+from buttons import Buttons, BUTTON
+from utils import enum, get_stdin_byte_or_button_press
+from wackamole import WackIt
 
 BadgeState = enum(
     REPL = const(0),
@@ -26,9 +28,10 @@ BadgeState = enum(
     NAMETAG_SHOW = const(1), 
     GLITCHIFIER9000 = const(2),
     CTF = const(3),
+    WACKAMOLE = const(4),
 
-    NAMETAG_SET = const(4), 
-    TOGGLE_DEBUG = const(5),
+    NAMETAG_SET = const(5), 
+    TOGGLE_DEBUG = const(6),
 
 
     BOOT = const(90),
@@ -37,11 +40,15 @@ BadgeState = enum(
     IDLE = const(99),
 )
 
+# First two arguments are x,y base, to be provided in function call
+TRIANGLE_POLY = (array('h', [3,0, 6,3, 3,6]), 1, 1)
+
 def menu_line():
     return '\n'.join(f' {BadgeState.__dict__[x]}: {x}' for x in [
         'NAMETAG_SHOW', 
         'GLITCHIFIER9000', 
         'CTF',
+        'WACKAMOLE',
     ]) + '\n\n' + '\n'.join(f' {BadgeState.__dict__[x]}: {x}' for x in [
         'NAMETAG_SET', 
         'TOGGLE_DEBUG', 
@@ -62,44 +69,6 @@ def init_i2c_oled():
 
     return i2c, oled
 
-def get_stdin_byte_or_button_press(buttons: Buttons) -> tuple:
-    # Wait for a byte from stdin, or any button press
-    # Probably not very power efficient way of doing it :(
-    #
-    # TODO: can probably do some fancy stuff to turn the buttons into io streams as well
-    b = None
-    button = None
-
-    spoll = select.poll()
-
-    spoll.register(sys.stdin, select.POLLIN)
-
-    # Clear any existing recent button
-    buttons.recent = None
-    
-    print_debug(f'before {spoll.poll(0)=} {buttons.recent=}')
-
-    # Wait for byte on stdin, not sure if this waits in a power efficient way
-    while spoll.poll(0) == [] and buttons.recent == None:
-        pass
-
-    print_debug(f'after {spoll.poll(0)=} {buttons.recent=}')
-
-    if spoll.poll(0):
-        b = sys.stdin.read(1)
-        print_debug(f'{b=}')
-    
-    if buttons.recent:
-        button = buttons.recent
-        print_debug(f'{button=}')
-        buttons.recent = None
-
-    # Not sure if this is needed
-    spoll.unregister(sys.stdin)
-
-    return (b, button)
-
-
 class Main():
     def __init__(self, initial_state=BadgeState.BOOT) -> None:
         self.state = initial_state
@@ -108,7 +77,10 @@ class Main():
         self.nametaganimator = None
         self.name = ''
 
-        self.spoll = 
+        self.in_char = None
+        self.in_button = None
+
+        self.menu_cursor_loc = 0
 
     def setup(self):
         self.name = read_namefile()
@@ -129,11 +101,58 @@ class Main():
                 self.state = BadgeState.IDLE
             
             elif self.state == BadgeState.MENU:
-                # Menu over serial
-                print(menu_line())
-                selected = input('> ')
+                # By default go back to MENU state
+                selected = BadgeState.MENU
+                
+                # If we end here via stdin, give priority to that
+                if self.in_char:
+                    self.in_char = None
+                    print_debug('Serial menu')
+                    print(menu_line())
+                    selected = input('> ')
 
-                print_debug(f'{selected=}')
+                    print_debug(f'{selected=}')
+                
+                # Or we end up here via buttons, do button things
+                elif self.in_button:
+                    print_debug(f'{self.in_button=}')
+                    self.in_button = None
+
+                    print_debug('Screen menu')
+                    self.oled.fill(0)
+                    self.oled.poly(0, self.menu_cursor_loc, *TRIANGLE_POLY)
+
+                    # Increments of 10 instead of 8 to have some spacing, but could fit 8 instead
+                    # Same order as BadgeState enum
+                    self.oled.text('NAMETAG_SHOW   ', 8, 0)
+                    self.oled.text('GLITCHIFIER9000', 8, 10)
+                    self.oled.text('CTF            ', 8, 20)
+                    self.oled.text('WACKAMOLE      ', 8, 30)
+                    self.oled.text('NAMETAG_SET    ', 8, 40)
+                    self.oled.show()
+
+                    # Wait for a button press
+                    print_debug('Waiting for button')
+                    while self.buttons.recent == None:
+                        pass
+
+                    print_debug(f'{self.buttons.recent=}')
+
+                    # Recent is a tuple of GPIONUM, BUTTON enum index, BUTTON enum string
+                    if self.buttons.recent[0] == BUTTON.DOWN:
+                        self.menu_cursor_loc = (self.menu_cursor_loc + 10) % (10*5)
+                    elif self.buttons.recent[0] == BUTTON.UP:
+                        self.menu_cursor_loc = (self.menu_cursor_loc - 10) % (10*5)
+                    elif self.buttons.recent[0] == BUTTON.MIDDLE:
+                        selected = (self.menu_cursor_loc // 10) + 1 # Add one, 0 is REPL
+                        print_debug(f'{self.menu_cursor_loc=} {selected=}')
+                    
+                    self.in_button = self.buttons.recent
+                    self.buttons.recent = None
+
+                else:
+                    print_debug(f'Nothing in {self.in_char=} and {self.in_button=}, back to NAMETAG_SHOW')
+                    selected = BadgeState.NAMETAG_SHOW
 
                 try:
                     selected = int(selected)
@@ -144,8 +163,7 @@ class Main():
                 except ValueError:
                     print(f'Invalid selection "{selected}"')
 
-                
-                # Menu on oled / with buttons
+                self.in_tuple = None
                 
             elif self.state == BadgeState.NAMETAG_SHOW:
                 self.name = read_namefile()
@@ -178,13 +196,10 @@ class Main():
             
             elif self.state == BadgeState.IDLE:
                 print_debug('ENTER IDLE')
-                # machine.idle() # Not sure this actually does anything
+                # machine.idle doesn't do much since we use CPU to animate screen with Timers
 
-                
-                # Wait for input or a python exception from the button
-
-                stdin_byte, button = get_stdin_byte_or_button_press(self.buttons)
-
+                # Wait for byte on stdin or button press
+                self.in_char, self.in_button = get_stdin_byte_or_button_press(self.buttons, read_stdin=False)
                 self.state = BadgeState.MENU
 
                 # Kill any running animations
@@ -194,7 +209,7 @@ class Main():
                     self.nametaganimator.kill()
                 
                 
-            elif self.state in [BadgeState.REPL, BadgeState.CTF, BadgeState.GLITCHIFIER9000]:
+            elif self.state in [BadgeState.REPL, BadgeState.CTF, BadgeState.GLITCHIFIER9000, BadgeState.WACKAMOLE]:
                 # TODO shouldn't be neccesary to kill any animations here, but just in case
                 if self.bootanimator.animating:
                     self.bootanimator.boot_animation_kill()
@@ -214,9 +229,15 @@ if __name__ == '__main__':
     print('Press any button to reveal menu.')
     print()
 
-    m = Main(initial_state=BadgeState.IDLE) # TODO: make sure it is BadgeState.BOOT (default)
+    m = Main(initial_state=BadgeState.MENU) # TODO: make sure it is BadgeState.BOOT (default)
     # m = Main()
     m.setup()
+
+    # Blink screen for alive check?
+    m.oled.fill(1)
+    m.oled.show()
+    m.oled.fill(0)
+    m.oled.show()
 
     exit_state = m.mainloop()
 
@@ -240,8 +261,12 @@ if __name__ == '__main__':
         tim.init(freq=.3, callback=link_shower)
         ctf_main()
     if exit_state == BadgeState.GLITCHIFIER9000:
-        g9k = Glitchifier9000(m.oled)
+        g9k = Glitchifier9000(m.oled, m.buttons)
         g9k.glitchifier_loop()
+    elif exit_state == BadgeState.WACKAMOLE:
+        wack = WackIt(m.oled, m.buttons)
+        while True:
+            wack.start()
     elif exit_state == BadgeState.REPL:
         # drop to interpreter, happens automatically in mpy
         pass

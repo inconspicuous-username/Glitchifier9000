@@ -2,7 +2,9 @@
 
 from machine import Pin, Timer
 from micropython import const
+
 from utils import enum
+from debug import print_debug
 
 BUTTON = enum(
     LEFT   = const(18),
@@ -32,7 +34,7 @@ class Buttons():
         self.right.irq( self.button_handler, trigger=Pin.IRQ_RISING)
         self.down.irq(  self.button_handler, trigger=Pin.IRQ_RISING)
 
-        self.debouncing_delay_ms = 50 # TODO good debounce time?
+        self.debouncing_delay_ms = 150 # TODO good debounce time?
         self.debouncing = False
         self.debouncing_timer = Timer()
 
@@ -46,10 +48,6 @@ class Buttons():
         # print('done debouncing')
         self.debouncing = False
         
-        if self.oled:
-            self.oled.fill(0)
-            self.oled.show()
-        
     def button_handler(self, pin):
         if self.debouncing:
             return
@@ -59,7 +57,8 @@ class Buttons():
         self.debouncing_timer.init(mode=Timer.ONE_SHOT, period=self.debouncing_delay_ms, callback=self.debounce_timer)
         
         if self.button_action:
-           self.button_action(pin)
+            print_debug(f'{pin=} button_action')
+            self.button_action(pin)
     
     def button_raise_exception(self, pin):
         raise Exception(button_info(pin))
