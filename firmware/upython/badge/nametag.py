@@ -1,3 +1,5 @@
+import random
+
 from machine import Timer
 
 from graphics import OLED_HEIGHT, rotate_row_bytes, dec_to_framebuf
@@ -8,14 +10,17 @@ RISCUFEFE_IMPACT_WIDTH = 72
 
 def read_namefile():
     try: 
-        with open('name.txt', 'r') as f:
-            return f.read()
+        with open('/data/name.txt', 'r') as f:
+            name = f.read()
+            name = name[:14]
+            name = f'{name:14s}'
+            return name
     except:
-        return ''
+        return f'RISCURIAN{random.randint(10000, 99999)}'
 
 def write_namefile(name):
-    with open('name.txt', 'w') as f:
-        f.write(name)
+    with open('/data/name.txt', 'w') as f:
+        f.write(f'{name[:14]:14s}')
 
 class NametagAnimator():
     def __init__(self, oled):

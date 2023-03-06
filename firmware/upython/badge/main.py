@@ -1,5 +1,10 @@
 # from enum import Enum, auto
 # import signal
+import os
+try:
+    os.mkdir('data')
+except OSError:
+    print_debug('/data already exists')
 
 import machine
 import sys
@@ -16,7 +21,7 @@ from ctf import ctf_main
 from boot import BootAnimator
 from glitchifier9000 import Glitchifier9000
 from graphics import OLED_WIDTH, OLED_HEIGHT, OLED_I2C_ID, OLED_I2C_SCL, OLED_I2C_SDA
-from debug import print_debug
+from debug import print_debug, toggle_debug
 from nametag import read_namefile, write_namefile, NametagAnimator
 from buttons import Buttons, BUTTON
 from utils import enum, get_stdin_byte_or_button_press
@@ -31,8 +36,8 @@ BadgeState = enum(
     WACKAMOLE = const(4),
 
     NAMETAG_SET = const(5), 
-    TOGGLE_DEBUG = const(6),
-
+    CLEAR_DATA = const(6),
+    TOGGLE_DEBUG = const(7),
 
     BOOT = const(90),
     MENU = const(91),
@@ -51,6 +56,7 @@ def menu_line():
         'WACKAMOLE',
     ]) + '\n\n' + '\n'.join(f' {BadgeState.__dict__[x]}: {x}' for x in [
         'NAMETAG_SET', 
+        'CLEAR_DATA', 
         'TOGGLE_DEBUG', 
     ]) + '\n\n' + '\n'.join(f' {BadgeState.__dict__[x]}: {x}' for x in [
         'REPL',
@@ -69,6 +75,13 @@ def init_i2c_oled():
 
     return i2c, oled
 
+def c_add(c, d):
+    c -= 0x20
+    c += d
+    c %= 0x5f
+    c += 0x20
+    return c
+
 class Main():
     def __init__(self, initial_state=BadgeState.BOOT) -> None:
         self.state = initial_state
@@ -80,7 +93,8 @@ class Main():
         self.in_char = None
         self.in_button = None
 
-        self.menu_cursor_loc = 0
+        self.menu_cursor_loc = 0 # In pixels
+        self.name_cursor_loc = 0 # In characters
 
     def setup(self):
         self.name = read_namefile()
@@ -129,6 +143,7 @@ class Main():
                     self.oled.text('CTF            ', 8, 20)
                     self.oled.text('WACKAMOLE      ', 8, 30)
                     self.oled.text('NAMETAG_SET    ', 8, 40)
+                    self.oled.text('CLEAR_DATA     ', 8, 50)
                     self.oled.show()
 
                     # Wait for a button press
@@ -140,9 +155,9 @@ class Main():
 
                     # Recent is a tuple of GPIONUM, BUTTON enum index, BUTTON enum string
                     if self.buttons.recent[0] == BUTTON.DOWN:
-                        self.menu_cursor_loc = (self.menu_cursor_loc + 10) % (10*5)
+                        self.menu_cursor_loc = (self.menu_cursor_loc + 10) % (10*6)
                     elif self.buttons.recent[0] == BUTTON.UP:
-                        self.menu_cursor_loc = (self.menu_cursor_loc - 10) % (10*5)
+                        self.menu_cursor_loc = (self.menu_cursor_loc - 10) % (10*6)
                     elif self.buttons.recent[0] == BUTTON.MIDDLE:
                         selected = (self.menu_cursor_loc // 10) + 1 # Add one, 0 is REPL
                         print_debug(f'{self.menu_cursor_loc=} {selected=}')
@@ -163,34 +178,97 @@ class Main():
                 except ValueError:
                     print(f'Invalid selection "{selected}"')
 
-                self.in_tuple = None
-                
             elif self.state == BadgeState.NAMETAG_SHOW:
                 self.name = read_namefile()
-                print(f'Hello {self.name}!')
+                print(f'Hello {self.name.strip()}!')
 
                 self.nametaganimator.name_to_oled(self.name)
 
                 self.state = BadgeState.IDLE
                 
             elif self.state == BadgeState.NAMETAG_SET:
-                self.oled.fill(0)
-                self.oled.text('ENTER NAME OVER ', 0, 0)
-                self.oled.text('USB!            ', 0, 8)
-                self.oled.text('TODO MAKE BUTTON', 0, 24)
-                self.oled.text('INTERFACE FOR IT', 0, 32)
-                self.oled.show()
+                # self.oled.fill(0)
+                # self.oled.text('ENTER NAME OVER ', 0, 0)
+                # self.oled.text('USB!            ', 0, 8)
+                # self.oled.text('TODO MAKE BUTTON', 0, 24)
+                # self.oled.text('INTERFACE FOR IT', 0, 32)
+                # self.oled.show()
 
-                # TODO max name length
-                name = input('name?\n> ')
-                if name:
-                    write_namefile(name[:14])
+
+                # If we end here via stdin, give priority to that
+                if self.in_char:
+                    self.in_char = None
+
+                    name = input('name?\n> ')
+                    print_debug(f'{name=}')
+                    if name:
+                        write_namefile(name)
+                    self.state = BadgeState.NAMETAG_SHOW
+
+                # Or we end up here via buttons, do button things
+                elif self.in_button:
+                    print_debug(f'{self.in_button=}')
+                    self.in_button = None
+
+                    print_debug('Screen nameset')
+                    self.oled.fill(0)
+
+                    cursor_line = (self.name_cursor_loc + 1) * 8, 36, (self.name_cursor_loc + 2) * 8 - 1, 36
+
+                    self.oled.line(*cursor_line, 1)
+                    self.oled.text(m.name, 8, 28)
+                    self.oled.show()
+
+                    # Wait for a button press
+                    print_debug('Waiting for button')
+                    while self.buttons.recent == None:
+                        pass
+
+                    print_debug(f'{self.buttons.recent=}')
+
+                    name = bytearray(self.name.encode())
+                    print_debug(f'{self.name=}')
+                    print_debug(f'{name=}')
+                    if self.buttons.recent[0] == BUTTON.RIGHT:
+                        self.name_cursor_loc = (self.name_cursor_loc + 1) % 14
+                    elif self.buttons.recent[0] == BUTTON.LEFT:
+                        self.name_cursor_loc = (self.name_cursor_loc - 1) % 14
+                    elif self.buttons.recent[0] == BUTTON.UP:
+                        name[self.name_cursor_loc] = c_add(name[self.name_cursor_loc], 1)
+                    elif self.buttons.recent[0] == BUTTON.DOWN:
+                        name[self.name_cursor_loc] = c_add(name[self.name_cursor_loc], -1)
+                    elif self.buttons.recent[0] == BUTTON.MIDDLE:
+                        self.name = name.decode()
+                        print_debug(f'Permanently store {self.name=}')
+                        print_debug(f'Back to NAMETAG_SHOW')
+                        write_namefile(self.name)
+                        self.state = BadgeState.NAMETAG_SHOW
+
+                    self.name = name.decode()
+                    print_debug(f'{name=}')
+                    print_debug(f'{self.name=}')
+                    
+                    self.in_button = self.buttons.recent
+                    self.buttons.recent = None
+                else:
+                    print_debug(f'Nothing in {self.in_char=} and {self.in_button=}, back to NAMETAG_SHOW')
+                    self.state = BadgeState.NAMETAG_SHOW
+
+            elif self.state == BadgeState.CLEAR_DATA:
+                base = '/data'
+                for f in os.listdir(base):
+                    try:
+                        print_debug('Remove ' + f'{base}/{f}')
+                        os.remove(f'{base}/{f}')
+                    except Exception as e:
+                        print_debug(f'{base}/{f}')
+                        print(f'{e=}')
+                        pass
                 
-                self.state = BadgeState.NAMETAG_SHOW
+                break
             
             elif self.state == BadgeState.TOGGLE_DEBUG:
-                import debug
-                debug.DEBUG ^= 1
+                toggle_debug()
 
                 self.state = BadgeState.MENU
             
@@ -210,17 +288,17 @@ class Main():
                 
                 
             elif self.state in [BadgeState.REPL, BadgeState.CTF, BadgeState.GLITCHIFIER9000, BadgeState.WACKAMOLE]:
-                # TODO shouldn't be neccesary to kill any animations here, but just in case
-                if self.bootanimator.animating:
-                    self.bootanimator.boot_animation_kill()
-                if self.nametaganimator.animating:
-                    self.nametaganimator.kill()
-
-                return self.state
+                break
 
             else:
                 self.state = BadgeState.MENU
 
+        if self.bootanimator.animating:
+            self.bootanimator.boot_animation_kill()
+        if self.nametaganimator.animating:
+            self.nametaganimator.kill()
+
+        return self.state
 
 if __name__ == '__main__':
     print('Riscufefe #5')
@@ -229,8 +307,8 @@ if __name__ == '__main__':
     print('Press any button to reveal menu.')
     print()
 
-    m = Main(initial_state=BadgeState.MENU) # TODO: make sure it is BadgeState.BOOT (default)
-    # m = Main()
+    # m = Main(initial_state=BadgeState.NAMETAG_SET) # TODO: make sure it is BadgeState.BOOT (default)
+    m = Main()
     m.setup()
 
     # Blink screen for alive check?
@@ -260,13 +338,21 @@ if __name__ == '__main__':
         tim = Timer()
         tim.init(freq=.3, callback=link_shower)
         ctf_main()
+
     if exit_state == BadgeState.GLITCHIFIER9000:
         g9k = Glitchifier9000(m.oled, m.buttons)
         g9k.glitchifier_loop()
+
     elif exit_state == BadgeState.WACKAMOLE:
         wack = WackIt(m.oled, m.buttons)
-        while True:
-            wack.start()
+        wack.wackloop()
+    
+    elif exit_state == BadgeState.CLEAR_DATA:
+        m.oled.fill(0)
+        m.oled.text('REBOOT INCOMING', 0, 30)
+        m.oled.show()
+        machine.reset()
+
     elif exit_state == BadgeState.REPL:
         # drop to interpreter, happens automatically in mpy
         pass
