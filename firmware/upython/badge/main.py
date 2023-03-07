@@ -1,6 +1,8 @@
 # from enum import Enum, auto
 # import signal
 import os
+import sys
+
 try:
     os.mkdir('/data')
 except OSError:
@@ -63,17 +65,15 @@ def menu_line():
     ])
 
 def init_i2c_oled():
-    # TODO handle non-existance of screen in I2C?
-
-    i2c = I2C(OLED_I2C_ID, sda=Pin(OLED_I2C_SDA), scl=Pin(OLED_I2C_SCL))
-
-    print_debug(f'I2C scan = {i2c.scan()}')
-    print_debug(f'I2C Configuration = {i2c}')
-    print_debug(f'I2C Address = 0x{i2c.scan()[0]:x}')
-    
-    oled = SSD1306_I2C(OLED_WIDTH, OLED_HEIGHT, i2c)
-
-    return i2c, oled
+    try:
+        i2c = I2C(OLED_I2C_ID, sda=Pin(OLED_I2C_SDA), scl=Pin(OLED_I2C_SCL))
+        oled = SSD1306_I2C(OLED_WIDTH, OLED_HEIGHT, i2c)
+        return i2c, oled
+    except:
+        print_debug(f'I2C scan = {i2c.scan()}')
+        print_debug(f'I2C Configuration = {i2c}')
+        # print_debug(f'I2C Address = 0x{i2c.scan()[0]:x}')
+        return None
 
 def c_add(c, d):
     c -= 0x20
@@ -98,10 +98,15 @@ class Main():
 
     def setup(self):
         self.name = read_namefile()
-        self.i2c, self.oled = init_i2c_oled()
+        ret = init_i2c_oled()
+        if ret:
+            self.i2c, self.oled = ret
+        else:
+            return ret
 
         self.buttons = Buttons(m.oled)
         self.buttons.button_action = self.buttons.button_record_recent
+        return True
 
     def mainloop(self) -> None:
         self.bootanimator = BootAnimator(self.oled)
@@ -309,7 +314,9 @@ if __name__ == '__main__':
 
     # m = Main(initial_state=BadgeState.NAMETAG_SET) # TODO: make sure it is BadgeState.BOOT (default)
     m = Main()
-    m.setup()
+    if not m.setup():
+        print('Could not set up screen, exit to REPL')
+        sys.exit(-1)
 
     # Blink screen for alive check?
     m.oled.fill(1)
