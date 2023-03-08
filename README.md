@@ -11,62 +11,16 @@ Some howto’s below.
 
 To get minimal badge functionality:
 
-1.  Attach the screen to the front:
+1.  Solder C3, C4
 
-<div layout-valign="bottom" fig-align="center">
+<img src="figs/c3c4.png" style="width:49.0%" data-fig-align="center" />
 
-<table>
-<colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
-</colgroup>
-<tbody>
-<tr class="odd">
-<td style="text-align: center;"><div width="50.0%"
-data-layout-align="center">
-<p><img src="figs/screen1.png" data-fig.extended="false" /></p>
-</div></td>
-<td style="text-align: center;"><div width="50.0%"
-data-layout-align="center">
-<p><img src="figs/screen2.png" data-fig.extended="false" /></p>
-</div></td>
-</tr>
-</tbody>
-</table>
-
-</div>
-
-2.  Attach the AAA battery holder to the back:
-
-<div layout-valign="bottom" fig-align="center">
-
-<table>
-<colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
-</colgroup>
-<tbody>
-<tr class="odd">
-<td style="text-align: center;"><div width="50.0%"
-data-layout-align="center">
-<p><img src="figs/battery1.png" data-fig.extended="false" /></p>
-</div></td>
-<td style="text-align: center;"><div width="50.0%"
-data-layout-align="center">
-<p><img src="figs/battery2.png" data-fig.extended="false" /></p>
-</div></td>
-</tr>
-</tbody>
-</table>
-
-</div>
-
-3.  To protect your PICO from having battery and USB power at the same
+2.  To protect your PICO from having battery and USB power at the same
     time, solder Q1:
 
 <img src="figs/q1.png" style="width:49.0%" data-fig-align="center" />
 
-4.  To be able to switch off the batteries, solder SW1:
+3.  To be able to switch off the batteries, solder SW1:
 
 <div layout-valign="bottom" fig-align="center">
 
@@ -91,7 +45,57 @@ data-layout-align="center">
 
 </div>
 
-5.  Insert 2xAAA batteries:
+4.  Attach the screen to the front:
+
+<div layout-valign="bottom" fig-align="center">
+
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><div width="50.0%"
+data-layout-align="center">
+<p><img src="figs/screen1.png" data-fig.extended="false" /></p>
+</div></td>
+<td style="text-align: center;"><div width="50.0%"
+data-layout-align="center">
+<p><img src="figs/screen2.png" data-fig.extended="false" /></p>
+</div></td>
+</tr>
+</tbody>
+</table>
+
+</div>
+
+5.  Attach the AAA battery holder to the back:
+
+<div layout-valign="bottom" fig-align="center">
+
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><div width="50.0%"
+data-layout-align="center">
+<p><img src="figs/battery1.png" data-fig.extended="false" /></p>
+</div></td>
+<td style="text-align: center;"><div width="50.0%"
+data-layout-align="center">
+<p><img src="figs/battery2.png" data-fig.extended="false" /></p>
+</div></td>
+</tr>
+</tbody>
+</table>
+
+</div>
+
+6.  Insert 2xAAA batteries:
 
 <img src="figs/battery3.png" style="width:49.0%"
 data-fig-align="center" />
@@ -117,17 +121,17 @@ To add GLITCHIFIER9000 functionality:
 
 <img src="figs/r2.png" style="width:49.0%" data-fig-align="center" />
 
-2.  Solder C3, C4
-
-<img src="figs/c3c4.png" style="width:49.0%" data-fig-align="center" />
-
 2.  Solder unlabeled SOT8 MOSFET:
 
 <img src="figs/sot8.png" style="width:49.0%" data-fig-align="center" />
 
+Ready to glitch!
+
 # Talk to the badge over USB
 
 1.  Plug in micro-usb cable.
+
+Ready to talk!
 
 ## On Windows
 
@@ -150,6 +154,8 @@ data-fig-align="center" />
 4.  Type some buttons, see what happens (also try CTRL+C and CTRL+D)
 
 <img src="figs/putty4.png" data-fig-align="center" />
+
+Ready to talk!
 
 ## On Linux
 
