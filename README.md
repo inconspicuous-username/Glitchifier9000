@@ -1,21 +1,104 @@
-# Glitchifier9000
+![](logo/lebowbski-tiny.png)
 
-pico: https://www.kiwi-electronics.com/en/raspberry-pi-pico-368/raspberry-pi-pico-10494
+# Riscufefe #5 badge repo
 
-AAA holder? 
-- https://www.digikey.nl/nl/products/detail/keystone-electronics/2468/303817
-- cheaper: https://nl.mouser.com/ProductDetail/Keystone-Electronics/2468?qs=3CbvriavsLAoISGi3MywrQ%3D%3D
+Some howto's below.
 
-mosfet to switch between battery and usb
-- https://nl.mouser.com/ProductDetail/Diodes-Incorporated/DMG2305UX-7?qs=L1DZKBg7t5F%2FNBHrjfxC%252Bg%3D%3D
-    - https://www.diodes.com/assets/Datasheets/DMG2305UX.pdf
-    
-battery connector power switch
-- https://nl.mouser.com/ProductDetail/CK/OS102011MA1QN1?qs=WtljUlYws5R6MUgHcLkz4w%3D%3D
 
-cheaper and bigger for multiples of 25
-- https://www.az-delivery.de/en/products/0-96zolldisplay?variant=39457349828704
+# Hardware DIY instructions
 
-## dont
+## Minimal badge functionality
 
-charger: https://docs.sunfounder.com/projects/kepler-kit/en/latest/component/component_lipo_charger.html
+To get minimal badge functionality:
+
+1. Attach the screen to the front:
+
+![TODO PICTURE](figs/screen1.png)
+![TODO PICTURE](figs/screen2.png)
+
+2. Attach the AAA battery holder to the back:
+
+![TODO PICTURE](figs/battery1.png)
+![TODO PICTURE](figs/battery2.png)
+
+3. To protect your PICO from having battery and USB power at the same time, solder Q1:
+
+![TODO PICTURE](figs/q1.png)
+
+4. To be able to switch off the batteries, solder SW1:
+
+![TODO PICTURE](figs/sw2-1.png)
+![TODO PICTURE](figs/sw2-2.png)
+
+5. Insert 2xAAA batteries:
+
+![TODO PICTURE](figs/battery3.png)
+
+You should now be able to see stuff on the screen, and you can interact over USB / serial.
+
+## Button controls
+
+To control the badge with the button:
+
+1. Solder the 10 (3, 2, 3, 2) points of the button at SW1:
+
+![TODO PICTURE](figs/sw1.png)
+
+You should now be able to use the botton.
+
+## GLITCHIFIER9000
+
+To add GLITCHIFIER9000 functionality:
+
+1. Solder R2
+
+![TODO PICTURE](figs/r2.png)
+
+2. Solder C3, C4
+
+![TODO PICTURE](figs/c3c4.png)
+
+2. Solder unlabeled SOT8 MOSFET:
+
+![TODO PICTURE](figs/sot8.png)
+
+# Talk to the badge over USB
+
+1. Plug in micro-usb cable.
+
+## On Windows
+
+1. Install a program to talk serial, like [putty](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
+
+![](figs/putty1.png)
+
+2. Find the COM port that pops up when you plug in the USB cable in device manager
+
+![](figs/putty2.png)
+
+3. Set up that COM port with speed 115200
+
+![](figs/putty3.png)
+
+4. Type some buttons, see what happens (also try CTRL+C and CTRL+D)
+
+![](figs/putty4.png)
+
+## On Linux
+
+1. You probably know yourself
+
+# Set up badge firmware on a plain Raspberry Pi Pico
+
+Set up PICO for badge
+
+1. Set up micropython firmware
+
+    - Boot RPI into bootloader mode (hold BOOTSEL button and plug in USB)
+    - Copy micropython `uf2` file to storage device (download yourself or located in `firmware/upython/rp2-firmware/rp2-pico-latest.uf2`)
+
+2. Copy firmware folder to device, for example with [`mpytool`](https://github.com/pavelrevak/mpytool)
+
+    - `mpytool -p SERIALPORT put firmware/upython/badge/`
+
+To do stuff over serial, connect with `SERIALPORT`, baudrate 115200.
