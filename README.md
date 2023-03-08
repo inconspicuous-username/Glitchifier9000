@@ -1,5 +1,5 @@
 
-![](logo/lebowbski-tiny.png)
+<img src="logo/lebowbski-tiny.png" data-fig-align="center" />
 
 # Riscufefe \#5 badge repo
 
@@ -13,19 +13,22 @@ To get minimal badge functionality:
 
 1.  Attach the screen to the front:
 
-<div valign="bottom">
+<div layout-valign="bottom" fig-align="center">
 
-<table style="width:50%;">
+<table>
 <colgroup>
+<col style="width: 50%" />
 <col style="width: 50%" />
 </colgroup>
 <tbody>
 <tr class="odd">
 <td style="text-align: center;"><div width="50.0%"
 data-layout-align="center">
-<p><img src="figs/screen1.png" style="width:49.0%" alt="TODO PICTURE" />
-<img src="figs/screen2.png" style="width:49.0%"
-alt="TODO PICTURE" /></p>
+<p><img src="figs/screen1.png" data-fig.extended="false" /></p>
+</div></td>
+<td style="text-align: center;"><div width="50.0%"
+data-layout-align="center">
+<p><img src="figs/screen2.png" data-fig.extended="false" /></p>
 </div></td>
 </tr>
 </tbody>
@@ -35,19 +38,22 @@ alt="TODO PICTURE" /></p>
 
 2.  Attach the AAA battery holder to the back:
 
-<div valign="bottom">
+<div layout-valign="bottom" fig-align="center">
 
-<table style="width:50%;">
+<table>
 <colgroup>
+<col style="width: 50%" />
 <col style="width: 50%" />
 </colgroup>
 <tbody>
 <tr class="odd">
 <td style="text-align: center;"><div width="50.0%"
 data-layout-align="center">
-<p><img src="figs/battery1.png" style="width:49.0%"
-alt="TODO PICTURE" /> <img src="figs/battery2.png" style="width:49.0%"
-alt="TODO PICTURE" /></p>
+<p><img src="figs/battery1.png" data-fig.extended="false" /></p>
+</div></td>
+<td style="text-align: center;"><div width="50.0%"
+data-layout-align="center">
+<p><img src="figs/battery2.png" data-fig.extended="false" /></p>
 </div></td>
 </tr>
 </tbody>
@@ -58,25 +64,26 @@ alt="TODO PICTURE" /></p>
 3.  To protect your PICO from having battery and USB power at the same
     time, solder Q1:
 
-<figure>
-<img src="figs/q1.png" style="width:49.0%" alt="TODO PICTURE" />
-<figcaption aria-hidden="true">TODO PICTURE</figcaption>
-</figure>
+<img src="figs/q1.png" style="width:49.0%" data-fig-align="center" />
 
 4.  To be able to switch off the batteries, solder SW1:
 
-<div valign="bottom">
+<div layout-valign="bottom" fig-align="center">
 
-<table style="width:50%;">
+<table>
 <colgroup>
+<col style="width: 50%" />
 <col style="width: 50%" />
 </colgroup>
 <tbody>
 <tr class="odd">
 <td style="text-align: center;"><div width="50.0%"
 data-layout-align="center">
-<p><img src="figs/sw2-1.png" style="width:49.0%" alt="TODO PICTURE" />
-<img src="figs/sw2-2.png" style="width:49.0%" alt="TODO PICTURE" /></p>
+<p><img src="figs/sw2-1.png" data-fig.extended="false" /></p>
+</div></td>
+<td style="text-align: center;"><div width="50.0%"
+data-layout-align="center">
+<p><img src="figs/sw2-2.png" data-fig.extended="false" /></p>
 </div></td>
 </tr>
 </tbody>
@@ -86,10 +93,8 @@ data-layout-align="center">
 
 5.  Insert 2xAAA batteries:
 
-<figure>
-<img src="figs/battery3.png" style="width:49.0%" alt="TODO PICTURE" />
-<figcaption aria-hidden="true">TODO PICTURE</figcaption>
-</figure>
+<img src="figs/battery3.png" style="width:49.0%"
+data-fig-align="center" />
 
 You should now be able to see stuff on the screen, and you can interact
 over USB / serial.
@@ -100,7 +105,7 @@ To control the badge with the button:
 
 1.  Solder the 10 (3, 2, 3, 2) points of the button at SW1:
 
-![TODO PICTURE](figs/sw1.png)
+<img src="figs/sw1.png" style="width:49.0%" data-fig-align="center" />
 
 You should now be able to use the botton.
 
@@ -110,15 +115,15 @@ To add GLITCHIFIER9000 functionality:
 
 1.  Solder R2
 
-![TODO PICTURE](figs/r2.png)
+<img src="figs/r2.png" style="width:49.0%" data-fig-align="center" />
 
 2.  Solder C3, C4
 
-![TODO PICTURE](figs/c3c4.png)
+<img src="figs/c3c4.png" style="width:49.0%" data-fig-align="center" />
 
 2.  Solder unlabeled SOT8 MOSFET:
 
-![TODO PICTURE](figs/sot8.png)
+<img src="figs/sot8.png" style="width:49.0%" data-fig-align="center" />
 
 # Talk to the badge over USB
 
@@ -129,20 +134,22 @@ To add GLITCHIFIER9000 functionality:
 1.  Install a program to talk serial, like
     [putty](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
 
-![](figs/putty1.png)
+<img src="figs/putty1.png" style="width:49.0%"
+data-fig-align="center" />
 
 2.  Find the COM port that pops up when you plug in the USB cable in
     device manager
 
-![](figs/putty2.png)
+<img src="figs/putty2.png" style="width:49.0%"
+data-fig-align="center" />
 
 3.  Set up that COM port with speed 115200
 
-![](figs/putty3.png)
+<img src="figs/putty3.png" data-fig-align="center" />
 
 4.  Type some buttons, see what happens (also try CTRL+C and CTRL+D)
 
-![](figs/putty4.png)
+<img src="figs/putty4.png" data-fig-align="center" />
 
 ## On Linux
 
@@ -165,3 +172,12 @@ Set up PICO for badge
     - `mpytool -p SERIALPORT put firmware/upython/badge/`
 
 To do stuff over serial, connect with `SERIALPORT`, baudrate 115200.
+
+# Misc
+
+To build this document in to various formats:
+
+    quarto render README.qmd --to pdf && \
+    quarto render README.qmd --to html && \
+    quarto render README.qmd --to docx && \
+    quarto render README.qmd --to gfm
