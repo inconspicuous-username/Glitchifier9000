@@ -5,6 +5,35 @@
 
 Some howto’s below.
 
+# The GLITCHIFIER9000 in a nutshell
+
+<figure>
+<img src="figs/g9k1.png" id="fig-1" style="width:80.0%"
+data-fig-align="center" alt="Figure 1: What is voltage glitching?" />
+<figcaption aria-hidden="true">Figure 1: What is voltage
+glitching?</figcaption>
+</figure>
+
+<figure>
+<img src="figs/g9k2.png" id="fig-2" style="width:80.0%"
+data-fig-align="center" alt="Figure 2: Normal operation" />
+<figcaption aria-hidden="true">Figure 2: Normal operation</figcaption>
+</figure>
+
+<figure>
+<img src="figs/g9k3.png" id="fig-3" style="width:80.0%"
+data-fig-align="center" alt="Figure 3: While glitching" />
+<figcaption aria-hidden="true">Figure 3: While glitching</figcaption>
+</figure>
+
+Check out the schematics [in this
+repo](https://github.com/inconspicuous-username/Glitchifier9000/blob/main/hardware/pdf/Glitchifier9000-sch.pdf)
+for more information!
+
+NOTE: The trigger input is currently set to the button for demo
+purposes, the use a different pin you have to modify [this
+line](https://github.com/inconspicuous-username/Glitchifier9000/blob/main/firmware/upython/badge/glitchifier9000.py#L32).
+
 # Hardware DIY instructions
 
 ## Minimal badge functionality

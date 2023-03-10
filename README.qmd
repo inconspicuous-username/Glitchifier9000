@@ -17,6 +17,17 @@ theme:
 
 Some howto's below.
 
+# The GLITCHIFIER9000 in a nutshell
+
+![What is voltage glitching?](figs/g9k1.png){width=80% fig-align="center" #fig-1}
+
+![Normal operation](figs/g9k2.png){width=80% fig-align="center" #fig-2}
+
+![While glitching](figs/g9k3.png){width=80% fig-align="center" #fig-3}
+
+Check out the schematics [in this repo](https://github.com/inconspicuous-username/Glitchifier9000/blob/main/hardware/pdf/Glitchifier9000-sch.pdf) for more information!
+
+NOTE: The trigger input is currently set to the button for demo purposes, the use a different pin you have to modify [this line](https://github.com/inconspicuous-username/Glitchifier9000/blob/main/firmware/upython/badge/glitchifier9000.py#L32).
 
 # Hardware DIY instructions
 
