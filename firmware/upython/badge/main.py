@@ -28,6 +28,8 @@ from nametag import read_namefile, write_namefile, NametagAnimator
 from buttons import Buttons, BUTTON
 from utils import enum, get_stdin_byte_or_button_press
 from wackamole import WackIt
+from tetris import Tetris
+
 
 BadgeState = enum(
     REPL = const(0),
@@ -36,10 +38,11 @@ BadgeState = enum(
     GLITCHIFIER9000 = const(2),
     CTF = const(3),
     WACKAMOLE = const(4),
+    TETRIS = const(5),
 
-    NAMETAG_SET = const(5), 
-    CLEAR_DATA = const(6),
-    TOGGLE_DEBUG = const(7),
+    NAMETAG_SET = const(6), 
+    CLEAR_DATA = const(7),
+    TOGGLE_DEBUG = const(8),
 
     BOOT = const(90),
     MENU = const(91),
@@ -56,6 +59,7 @@ def menu_line():
         'GLITCHIFIER9000', 
         'CTF',
         'WACKAMOLE',
+        'TETRIS',
     ]) + '\n\n' + '\n'.join(f' {BadgeState.__dict__[x]}: {x}' for x in [
         'NAMETAG_SET', 
         'CLEAR_DATA', 
@@ -144,11 +148,12 @@ class Main():
                     # Increments of 10 instead of 8 to have some spacing, but could fit 8 instead
                     # Same order as BadgeState enum
                     self.oled.text('NAMETAG_SHOW   ', 8, 0)
-                    self.oled.text('GLITCHIFIER9000', 8, 10)
-                    self.oled.text('CTF            ', 8, 20)
-                    self.oled.text('WACKAMOLE      ', 8, 30)
-                    self.oled.text('NAMETAG_SET    ', 8, 40)
-                    self.oled.text('CLEAR_DATA     ', 8, 50)
+                    self.oled.text('GLITCHIFIER9000', 8, 8*1)
+                    self.oled.text('CTF            ', 8, 8*2)
+                    self.oled.text('WACKAMOLE      ', 8, 8*3)
+                    self.oled.text('TETRIS         ', 8, 8*4)
+                    self.oled.text('NAMETAG_SET    ', 8, 8*5)
+                    self.oled.text('CLEAR_DATA     ', 8, 8*6)
                     self.oled.show()
 
                     # Wait for a button press
@@ -160,11 +165,11 @@ class Main():
 
                     # Recent is a tuple of GPIONUM, BUTTON enum index, BUTTON enum string
                     if self.buttons.recent[0] == BUTTON.DOWN:
-                        self.menu_cursor_loc = (self.menu_cursor_loc + 10) % (10*6)
+                        self.menu_cursor_loc = (self.menu_cursor_loc + 8) % (8*7)
                     elif self.buttons.recent[0] == BUTTON.UP:
-                        self.menu_cursor_loc = (self.menu_cursor_loc - 10) % (10*6)
+                        self.menu_cursor_loc = (self.menu_cursor_loc - 8) % (8*7)
                     elif self.buttons.recent[0] == BUTTON.MIDDLE:
-                        selected = (self.menu_cursor_loc // 10) + 1 # Add one, 0 is REPL
+                        selected = (self.menu_cursor_loc // 8) + 1 # Add one, 0 is REPL
                         print_debug(f'{self.menu_cursor_loc=} {selected=}')
                     
                     self.in_button = self.buttons.recent
@@ -292,7 +297,7 @@ class Main():
                     self.nametaganimator.kill()
                 
                 
-            elif self.state in [BadgeState.REPL, BadgeState.CTF, BadgeState.GLITCHIFIER9000, BadgeState.WACKAMOLE]:
+            elif self.state in [BadgeState.REPL, BadgeState.CTF, BadgeState.GLITCHIFIER9000, BadgeState.WACKAMOLE, BadgeState.TETRIS]:
                 break
 
             else:
@@ -353,7 +358,11 @@ if __name__ == '__main__':
     elif exit_state == BadgeState.WACKAMOLE:
         wack = WackIt(m.oled, m.buttons)
         wack.wackloop()
-    
+
+    elif exit_state == BadgeState.TETRIS:
+        tetris = Tetris(m.oled, m.buttons)
+        tetris.tetris_loop()
+
     elif exit_state == BadgeState.CLEAR_DATA:
         m.oled.fill(0)
         m.oled.text('REBOOT INCOMING', 0, 30)
@@ -363,3 +372,4 @@ if __name__ == '__main__':
     elif exit_state == BadgeState.REPL:
         # drop to interpreter, happens automatically in mpy
         pass
+
