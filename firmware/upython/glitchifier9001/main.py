@@ -19,14 +19,26 @@ OLED_I2C_SCL = 1
 GPIO_CROWBAR_BASE = 2
 GPIO_CROWBAR_COUNT = 13
 GPIO_TRIGGER_IN = 15
+GPIO_UART_TX = 16
+GPIO_UART_RX = 17
+# 18-21 are connected to buttons
+GPIO_CONN_6 = 28
+GPIO_CONN_7 = 29
+GPIO_CONN_8 = 30
 
 TIMEOUT_S = 2
 
 TIME_REGEX = r"^([0-9]*)(n|u|m)?(s)?$"
 
+# Glitcher control commands
 CMD_PING = 0x30
 CMD_RESET = 0x31
-CMD_GLITCH = 0x32
+
+# Glitcher -> target commands
+CMD_TARGET_RESET = 0x50
+
+# Glitch commands
+CMD_SIMPLE_GLITCH = 0x70
 
 RET_OK = 0x00
 RET_CMD_ERROR = 0x80
@@ -101,7 +113,7 @@ def crowbar_short_check():
     # Check the value of all pins
     pin_states = {}
     for p in PIN_LIST:
-        print_debug(f'{p} = {Pin(p).value()=}')
+        print(f'{p} = {Pin(p).value()=}')
         pin_states[p] = Pin(p).value()
         if p in crowbar_list:
             assert Pin(p).value() == 0, f'Pin({p}) should be 0'
@@ -114,7 +126,7 @@ def crowbar_short_check():
 
     # Check that only the crowbar pins change to high
     for p in PIN_LIST:
-        print_debug(f'{p} = {Pin(p).value()=}')
+        print(f'{p} = {Pin(p).value()=}')
         if p in crowbar_list:
             assert Pin(p).value() == 1, f'Pin({p}) should be 1'
         else:
@@ -200,11 +212,21 @@ class Glitchifier9001():
         self.delay_cycles = 200
         self.length_cycles = 500
 
+        self.sm = StateMachine(0, pio_simple_glitcher, 
+            in_base=Pin(GPIO_TRIGGER_IN, Pin.IN, Pin.PULL_DOWN), 
+            out_base=Pin(GPIO_CROWBAR_BASE))
+        
     def _debug(self, msg):
         print(f'[DEBUG] {msg}')
     
     def _error(self, msg):
         print(f'[ERROR] {msg}')
+
+    def eread(self, *args):
+        return sys.stdin.read(*args)
+    
+    def ewrite(self, *args):
+        return sys.stdout.write(*args)
 
     def init_screen(self):
         try:
@@ -212,17 +234,24 @@ class Glitchifier9001():
             self.oled = SSD1306_I2C(OLED_WIDTH, OLED_HEIGHT, self.i2c)
             self.waitanimator = WaitAnimator(self.oled)
         except:
+            self._error(f'Cannot instantiate screen')
             self._debug(f'I2C scan = {self.i2c.scan()}')
             self._debug(f'I2C Configuration = {self.i2c}')
+
+        if self.oled:
+            self.oled.fill(0)
+            self.oled.text('GLITCHIFIER9001!', 0, 0)
+            self.oled.text(f'c={rounded_unit(self.clock)}Hz', 4, 8)
+            self.oled.show()
 
     def get_next_cmd(self) -> None:
         if self.verbose_serial:
             # TODO
             pass
         else:
-            self.cmd.id, self.cmd.param_len = struct.unpack('BB', sys.stdin.read(3))
+            self.cmd.id, self.cmd.param_len = struct.unpack('BB', self.eread(3))
             if self.cmd.id != CMD_PING:
-                self.cmd.params = sys.stdin.read(self.cmd.param_len)
+                self.cmd.params = self.eread(self.cmd.param_len)
 
     def do_cmd(self) -> None:
         if self.cmd.id == CMD_PING:
@@ -235,11 +264,11 @@ class Glitchifier9001():
 
         elif self.cmd.id == CMD_RESET:
             self.ret.id = RET_OK
-            sys.stdout.write(self.ret.bytes())
+            self.ewrite(self.ret.bytes())
             machine.reset()
 
-        elif self.cmd.id == CMD_GLITCH:
-            if self.cmd.param_len != 8:
+        elif self.cmd.id == CMD_SIMPLE_GLITCH:
+            if self.cmd.param_len != 0:
                 self.ret.id = RET_PARAM_ERROR
                 self.ret.params = f'Invalid param_len={self.cmd.param_len}'
                 return
@@ -318,20 +347,10 @@ class Glitchifier9001():
     def loop(self) -> None:
         self.alive = True
 
-        self.sm = StateMachine(0, pio_simple_glitcher, 
-            in_base=Pin(GPIO_TRIGGER_IN, Pin.IN, Pin.PULL_DOWN), 
-            out_base=Pin(GPIO_CROWBAR_BASE))
-        
-        if self.oled:
-            self.oled.fill(0)
-            self.oled.text('GLITCHIFIER9001!', 0, 0)
-            self.oled.text(f'c={rounded_unit(self.clock)}Hz', 4, 8)
-            self.oled.show()
-
         while self.alive:
             self.get_next_cmd()
             self.do_cmd()
-            sys.stdout.write(self.ret.bytes())
+            self.ewrite(self.ret.bytes())
 
         print('bye')
 
@@ -348,3 +367,8 @@ if __name__ == '__main__':
 
     print("Entering glitcher loop, use CTRL-C to escape to REPL. Interact with g9k1 from REPL to glitch manually.")
     g9k1.loop()
+    
+    # # Use second core? Or scheduler?
+    # import _thread
+    # g9k1_id = _thread.start_new_thread(g9k1.loop)
+    
