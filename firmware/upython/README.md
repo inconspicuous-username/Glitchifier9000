@@ -2,30 +2,26 @@
 
 [Pico micropython docs](https://www.raspberrypi.com/documentation/microcontrollers/micropython.html)
 
-## Install upython
+## Prepare upython environment
 
+1. Reboot pico with BOOTSEL pressed, then copy the uf2 file to install upython
 ```
-curl https://micropython.org/download/rp2-pico/rp2-pico-latest.uf2 -o rp2-pico-latest.uf2
+cp rp2-firmware/rp2-pico-latest.uf2 /path/to/rpi/filesystem
+sync
 ```
-
-Reboot pico with BOOTSEL pressed, the ncopy the uf2 file
-
-```
-cp rp2-pico-latest.uf2 /path/to/rpi/filesystem
-```
-
-## Install host tools
+Then wait until the device reboots to micropython ("Manufacturer: MicroPython" in dmesg).
+2. Install host tools
 
 ```
 pip install rshell mpremote
 ```
-
-## Set up ssd1306 package
+3. Set up ssd1306 package
 
 ```
-mpremote pip install ssd1306
+mpremote mip install ssd1306
 ```
 
+Potentially useful stuff
 - https://docs.micropython.org/en/latest/esp8266/tutorial/ssd1306.html
 
 - https://ssd1306.readthedocs.io/en/latest/python-usage.html
@@ -51,7 +47,7 @@ pip install micropython-rp2-stubs
 
 [set up for vscode](https://micropython-stubs.readthedocs.io/en/latest/22_vscode.html)
 
-## mpytool (easier than rshell in some ways)
+## Usage with mpytool (easier than rshell in some ways)
 
 ```
 pip install mpytool
@@ -75,7 +71,7 @@ Upload folder content:
 mpytool -p /dev/tty*** put badge/
 ```
 
-## rshell
+## Usage with rshell
 
 Open [`rshell`](https://github.com/dhylands/rshell) (should detect your Pico automatically)
 
@@ -94,16 +90,13 @@ repl
 Create folder `/flash` on the rpi pico (once)
 
 ```
-repl
-import os
-os.mkdir('/flash')
+mkdir /pyboard/flash/
 ```
 
-Copy script to /flash and run it
+Copy script to /pyboard/flash and run it
 
 ```
-rshell
-cp script.py /flash/ ; repl ~ import flash.script
+cp script.py /pyboard/flash/ ; repl ~ import flash.script
 ```
 
 ### Run at boot
